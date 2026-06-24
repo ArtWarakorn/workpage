@@ -14,7 +14,7 @@ export default function LoginPage() {
 
   function handleSignIn(e) {
     e.preventDefault();
-    router.push('/dashboard');
+    router.push(`/dashboard/${id}`);
   }
 
   return (

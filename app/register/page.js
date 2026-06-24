@@ -35,7 +35,7 @@ export default function RegisterPage() {
           <input
             className="auth-input"
             type="text"
-            name="users_id"
+            name="users_"
             value={form.user_id}
             onChange={handleChange}
             autoComplete="users_id"
