@@ -7,20 +7,40 @@ import Link from 'next/link';
 export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ username: '', password: '' });
+  const [error, setError] = useState('');
 
   function handleChange(e) {
-    
+    setForm({ ...form, [e.target.name]: e.target.value });
   }
 
-  function handleSignIn(e) {
+  async function handleSignIn(e) {
     e.preventDefault();
-    router.push(`/dashboard/${id}`);
+    setError('');
+    
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        router.push(`/dashboard/${data.users_id}`);
+      } else {
+        setError(data.error || 'Login failed');
+      }
+    } catch (err) {
+      setError('An error occurred');
+    }
   }
 
   return (
     <div className="auth-page">
       <div className="auth-card">
         <h1 className="auth-title">sign in</h1>
+        {error && <p style={{ color: 'red', textAlign: 'center', marginBottom: '10px' }}>{error}</p>}
 
         <div className="auth-field">
           <label className="auth-label">user name :</label>

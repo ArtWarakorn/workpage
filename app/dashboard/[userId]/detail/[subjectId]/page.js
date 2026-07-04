@@ -85,10 +85,6 @@ export default function DetailPage({ params }) {
                 <input type="text" className="detail-input" />
               </div>
               <div className="detail-form-group">
-                <label>รายละเอียด :</label>
-                <input type="text" className="detail-input" />
-              </div>
-              <div className="detail-form-group">
                 <label>วันที่ส่ง :</label>
                 <input type="date" className="detail-input" />
               </div>
