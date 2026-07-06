@@ -1,69 +1,153 @@
-# Report: API Login & Bug Fixes
+================================================================================
+  รายงานการพัฒนาระบบจัดการงาน — Detail Page (/dashboard/[userId]/detail/[subjectId])
+  สร้างโดย : AI (Antigravity)
+  วันที่รายงาน : 2026-07-06
+================================================================================
 
-## 1. Bugs Found & Fixed in `/app/login/page.js`
-- **Bug 1: Empty `handleChange` Function**
-  - **Issue:** The `handleChange` function was empty, meaning the state of the username and password fields was not updating when the user typed.
-  - **Fix:** Implemented `setForm({ ...form, [e.target.name]: e.target.value });` so the form state accurately tracks input.
-- **Bug 2: Invalid Redirection in `handleSignIn`**
-  - **Issue:** The login function tried to redirect using `router.push("/dashboard/${id}")`, but `id` was undefined. Furthermore, no actual login validation was happening.
-  - **Fix:**
-    - Changed `handleSignIn` to an `async` function.
-    - Implemented a `fetch` POST request to the newly created `/api/login` endpoint with the username and password.
-    - Upon successful login (HTTP 200 OK), redirected the user correctly to `/dashboard/${data.users_id}`.
-    - Handled failed logins by setting an `error` state and displaying an error message above the inputs.
+## ขั้นตอนที่ 1 : อ่านฐานข้อมูล Supabase (schema: workpage)
+วันที่ทำ : 2026-07-06
+สถานะ : ✅ เสร็จแล้ว
 
-## 2. API Creation in `/app/api/login/route.js`
-- **Action:** Created a new POST route for login authentication.
-- **Details:** 
-  - Retrieves the `username` and `password` from the JSON body.
-  - Connects to Supabase to query the `workpage` schema and `users` table.
-  - Validates if a user matches the `users_name` and `password`.
-  - If a match is found, returns the user data as JSON (`HTTP 200`).
-  - If no match or an error occurs, returns an "Invalid username or password" message (`HTTP 401`).
+  ดึง schema จาก Supabase REST API (/rest/v1/ พร้อม Accept-Profile: workpage)
+  พบ 4 ตารางในระบบ :
 
-## 3. API Creation in `/app/api/users/[id]/route.js`
-- **Action:** Created a dynamic GET route for fetching a single user.
-- **Details:** 
-  - Expects the `[id]` parameter from the URL.
-  - Queries Supabase for a single user where `users_id = id`.
-  - Used safely inside the dashboard to load user details like the avatar picture and username dynamically.
+  [enroll]
+    - users_id    : integer (PK, FK → users.users_id)
+    - subject_id  : text    (PK, FK → subject.subject_id)
+    - enroll_day  : text
+    - start_time  : time
+    - end_time    : time
 
-## 4. API Creation & Dashboard Logic (`/app/api/enroll/route.js`)
-- **Action:** Created a new endpoint (`/api/enroll`) strictly for dashboard calendar management, and updated `/app/dashboard/[userId]/page.js`.
-- **Details:**
-  - **POST `/api/enroll`**: Receives data from the dashboard form. It first **upserts** the subject (รหัสวิชา, ชื่อวิชา, รายละเอียด) in the `subject` table. Then it **inserts** the schedule (วันที่, เลือกเวลาเริ่ม, เลือกเวลาออก) into the `enroll` table tied to the `users_id`.
-  - **GET `/api/enroll`**: Retrieves all enrolled subjects for a specific `users_id`.
-  - **Dashboard Updates**:
-    - Connected all input fields to React `useState`.
-    - Implemented a smooth Save/Clear feature.
-    - Updated the calendar grid to dynamically render blocks (`#6366f1` background) with the subject code and subject name exactly matching the exact Day and Time slot saved in Supabase.
-- **Project Integrity Check:** Successfully rebuilt the project using `npm run build` to verify that no code or routing mechanics were broken during this process!
+  [subject]
+    - subject_id     : text (PK)
+    - subject_name   : text (required)
+    - subject_detail : text
 
---อันนี้ยังทำไม่เสร็จ
-เวลาที่แสดงไม่ตรงกับที่มีข้อมูลอยูใน supabase ช่วยไปดึงข้อมูลมาจาก database ไม่ใช่เขียนลงใน code
-รบกวนช่วยแก้ไขให้ที
+  [work]  ← ตารางหลักสำหรับหน้า detail
+    - work_id         : integer (PK, auto-increment)
+    - work_title      : text    (required)
+    - work_date_start : date    (default: CURRENT_DATE)
+    - work_date_end   : date
+    - work_detail     : text
+    - work_status     : boolean (default: false = ยังไม่เสร็จ)
+    - subject_id      : text    (FK → subject.subject_id)
 
-▸ Thought for 5s, 871 tokens
-  Prioritizing Tool Usage
+  [users]
+    - users_id          : integer (PK)
+    - users_name        : text (required)
+    - password          : text (required)
+    - users_profile_url : text
 
-● Bash(curl -i -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOi...) (ctrl+o to
-expand)
 
-▸ Thought for 7s, 364 tokens
-  Prioritizing Tool Usage
-● Bash(curl -i "http://localhost:3000/api/enroll?userId=6906001") (ctrl+o to expand)
+## ขั้นตอนที่ 2 : สร้าง Back-end API — GET & POST งาน
+วันที่ทำ : 2026-07-06
+สถานะ : ✅ เสร็จแล้ว
+ไฟล์ : app/api/work/route.js
 
-▸ Thought for 12s, 1.9k tokens
-  Prioritizing Tool Usage
+  GET  /api/work?subjectId=[id]
+    → ดึงรายการงานทั้งหมดของวิชานั้น เรียงตาม work_date_end
+    → Query: supabase.schema('workpage').from('work').select('*').eq('subject_id', subjectId)
 
-● Read(/home/warakorn/Desktop/CSCXXX/pr...e/app/dashboard/[userId]/page.js) (ctrl+o to expand)
+  POST /api/work
+    Body: { subject_id, work_title, work_date_end, work_detail, work_status }
+    → Insert งานใหม่เข้า table work
+    → คืนค่า row ที่ insert พร้อม work_id ที่ได้รับ
 
-▸ Thought for 35s, 3.5k tokens
-  Prioritizing Tool Usage
 
-● Edit(/home/warakorn/Desktop/CSCXXX/pr...e/app/dashboard/[userId]/page.js) (ctrl+o to expand)
+## ขั้นตอนที่ 3 : สร้าง Back-end API — PATCH & DELETE งานรายชิ้น
+วันที่ทำ : 2026-07-06
+สถานะ : ✅ เสร็จแล้ว
+ไฟล์ : app/api/work/[workId]/route.js
 
-▸ Thought for 2s, 607 tokens
-  Prioritizing Tool Usage
+  PATCH  /api/work/[workId]
+    Body: { work_status: true/false }
+    → อัปเดตสถานะงาน (toggle done/pending)
 
-● Edit(/home/warakorn/Desktop/CSCXXX/pr...e/app/dashboard/[userId]/page.js) (ctrl+o to expand)
+  DELETE /api/work/[workId]
+    → ลบงานรายชิ้นตาม work_id
+
+
+## ขั้นตอนที่ 4 : สร้าง Back-end API — ลบงานที่เสร็จแล้วทั้งหมด
+วันที่ทำ : 2026-07-06
+สถานะ : ✅ เสร็จแล้ว
+ไฟล์ : app/api/work/done/route.js
+
+  DELETE /api/work/done?subjectId=[id]
+    → ลบ record ใน table work ที่ subject_id ตรงกัน และ work_status = true ทั้งหมด
+    → ใช้ Supabase .delete().eq('subject_id', id).eq('work_status', true)
+
+
+## ขั้นตอนที่ 5 : สร้าง Back-end API — ดึงข้อมูลวิชา
+วันที่ทำ : 2026-07-06
+สถานะ : ✅ เสร็จแล้ว
+ไฟล์ : app/api/subject/[subjectId]/route.js
+
+  GET /api/subject/[subjectId]
+    → ดึง subject_id, subject_name, subject_detail จาก table subject
+    → ใช้แสดงชื่อวิชาและรหัสวิชาใน sidebar ของหน้า detail
+
+
+## ขั้นตอนที่ 6 : เขียน Front-end หน้า Detail
+วันที่ทำ : 2026-07-06
+สถานะ : ✅ เสร็จแล้ว
+ไฟล์ : app/dashboard/[userId]/detail/[subjectId]/page.js
+
+  ฟีเจอร์ที่ทำ :
+  [✓] แสดงชื่อวิชา (subject_name) และรหัสวิชา (subject_id) จาก API จริง
+  [✓] แสดงรายการงาน (work) ของวิชานั้นจาก table work พร้อม:
+        - work_title  (หัวข้องาน)
+        - work_detail (รายละเอียด)
+        - work_date_start / work_date_end (วันที่สั่ง / วันที่ส่ง)
+        - work_status badge (เขียว = เสร็จ / แดง = ยังไม่เสร็จ)
+  [✓] ปุ่ม "+ เพิ่มงาน" เปิด Modal กรอกข้อมูล
+      - หัวข้อ (work_title) — required
+      - วันที่ส่ง (work_date_end) — date picker
+      - รายละเอียด (work_detail) — textarea
+      - สถานะ (work_status) — dropdown ยังไม่เสร็จ / เสร็จแล้ว
+      - ปุ่มบันทึก → POST /api/work
+      - ปุ่มยกเลิก → ปิด Modal
+  [✓] ปุ่ม "เปลี่ยนสถานะ" ในแต่ละ card → PATCH /api/work/[workId]
+  [✓] ปุ่ม "ลบงานที่เสร็จแล้ว (N)" แสดงเมื่อมีงานเสร็จ → DELETE /api/work/done
+      - มี confirm dialog ก่อนลบ
+      - แสดงจำนวนงานที่จะลบ
+  [✓] Stats cards ใน sidebar : นับจำนวน ยังไม่เสร็จ / เสร็จแล้ว
+  [✓] ปุ่มกลับไปหน้า Dashboard
+  [✓] Empty state เมื่อยังไม่มีงาน
+  [✓] Loading state ขณะโหลดข้อมูล
+
+
+## ขั้นตอนที่ 7 : อัปเดต CSS (globals.css)
+วันที่ทำ : 2026-07-06
+สถานะ : ✅ เสร็จแล้ว
+ไฟล์ : app/globals.css
+
+  เพิ่ม class ใหม่ :
+  - .detail-stats, .detail-stat-card, .stat-pending, .stat-done
+  - .stat-num, .stat-label
+  - .detail-back-btn
+  - .detail-delete-done-btn
+  - .detail-main-title
+  - .detail-empty
+  - .task-card-status-row, .task-status-badge
+  - .detail-modal-title, .detail-cancel-btn
+
+
+================================================================================
+  สรุปไฟล์ทั้งหมดที่สร้าง/แก้ไข
+================================================================================
+
+  สร้างใหม่ :
+  ├── app/api/work/route.js                    ← GET + POST งาน
+  ├── app/api/work/[workId]/route.js           ← PATCH + DELETE งานรายชิ้น
+  ├── app/api/work/done/route.js               ← DELETE งานที่เสร็จทั้งหมด
+  └── app/api/subject/[subjectId]/route.js     ← GET ข้อมูลวิชา
+
+  แก้ไข :
+  ├── app/dashboard/[userId]/detail/[subjectId]/page.js  ← Front-end หน้า detail (เขียนใหม่ทั้งหมด)
+  └── app/globals.css                                     ← เพิ่ม CSS classes ใหม่
+
+
+================================================================================
+  สถานะรวม : ✅ เสร็จสมบูรณ์ทุกขั้นตอน
+  วันที่เสร็จ : 2026-07-06
+================================================================================

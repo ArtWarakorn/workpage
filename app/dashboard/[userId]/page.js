@@ -1,6 +1,7 @@
 'use client'
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const params = useParams();
@@ -257,8 +258,9 @@ export default function DashboardPage() {
                     const widthPx = durationSlots * SLOT_WIDTH + (durationSlots - 1) * SLOT_GAP;
 
                     return (
-                      <div 
-                        key={idx} 
+                      <Link
+                        key={idx}
+                        href={`/dashboard/${userId}/detail/${enroll.subject_id}`}
                         style={{ 
                           position: 'absolute',
                           left: leftPx,
@@ -276,15 +278,20 @@ export default function DashboardPage() {
                           border: '1px solid #4f46e5',
                           overflow: 'hidden',
                           zIndex: 10,
-                          boxSizing: 'border-box'
+                          boxSizing: 'border-box',
+                          textDecoration: 'none',
+                          cursor: 'pointer',
+                          transition: 'opacity 0.15s ease, transform 0.1s ease',
                         }}
+                        onMouseEnter={e => { e.currentTarget.style.opacity = '0.82'; e.currentTarget.style.transform = 'scale(1.02)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'scale(1)'; }}
                       >
                         <div style={{fontWeight: 'bold'}}>{enroll.subject_id}</div>
                         <div style={{whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{enroll.subject?.subject_name}</div>
                         <div style={{fontSize: '10px', marginTop: '2px', color: '#e0e7ff'}}>
                           {enroll.start_time.substring(0, 5)} - {enroll.end_time.substring(0, 5)}
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
