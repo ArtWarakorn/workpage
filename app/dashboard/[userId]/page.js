@@ -90,6 +90,26 @@ export default function DashboardPage() {
     });
   };
 
+  const handleClearTimetable = async () => {
+    if (enrollments.length === 0) {
+      alert('ตารางเรียนว่างอยู่แล้ว');
+      return;
+    }
+    if (!confirm(`ยืนยันการลบวิชาในตารางเรียนทั้งหมด ${enrollments.length} วิชา?`)) return;
+    try {
+      const res = await fetch(`/api/enroll?userId=${userId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setEnrollments([]);
+      } else {
+        const err = await res.json();
+        alert('Error: ' + err.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('เกิดข้อผิดพลาด');
+    }
+  };
+
   const getDynamicTimeSlots = () => {
     if (!enrollments || enrollments.length === 0) {
       return [
@@ -209,6 +229,9 @@ export default function DashboardPage() {
           <div className="form-buttons">
             <button className="btn-save" onClick={handleSave}>Save</button>
             <button className="btn-clear" onClick={handleClear}>Clear</button>
+            <button className="btn-clear-timetable" onClick={handleClearTimetable}>
+              🗑 Clear ตารางเรียน
+            </button>
           </div>
         </section>
 

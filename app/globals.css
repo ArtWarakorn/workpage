@@ -394,6 +394,30 @@ html, body {
   margin-top: -6px;
 }
 
+.btn-clear-timetable {
+  background: #7b1fa2;
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 12px 28px;
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: var(--font-thai);
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  transition: background 0.2s, transform 0.15s;
+}
+
+.btn-clear-timetable:hover {
+  background: #4a148c;
+  transform: translateY(-1px);
+}
+
+.btn-clear-timetable:active {
+  transform: translateY(0);
+}
+
+
 /* ---- Calendar Grid ---- */
 .calendar-area {
   flex: 1;

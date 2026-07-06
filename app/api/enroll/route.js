@@ -60,3 +60,23 @@ export async function POST(request) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
+
+export async function DELETE(request) {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
+
+    try {
+        const { error } = await supabase
+            .schema('workpage')
+            .from('enroll')
+            .delete()
+            .eq('users_id', parseInt(userId));
+
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+    } catch (err) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
