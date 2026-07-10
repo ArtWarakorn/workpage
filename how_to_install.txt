@@ -1,0 +1,22 @@
+=======================================================
+install on your localhost
+=======================================================
+
+download nodejs and git
+
+git clone https://github.com/ArtWarakorn/workpage
+
+go to this web = https://supabase.com/  "log in"
+
+coppy file database.db and past
+
+open cmd or terminal
+
+run command
+
+1. npm install
+2. npm install @supabase/supabase-js @supabase/ssr
+3. cd [your path as saving]
+4. npm run dev
+
+===========================================================
