@@ -8,6 +8,7 @@ export default function DashboardPage() {
   const userId = params?.userId;
   const [user, setUser] = useState(null);
   const [enrollments, setEnrollments] = useState([]);
+  const [availableSubjects, setAvailableSubjects] = useState([]);
   const [form, setForm] = useState({
     subject_id: '',
     subject_name: '',
@@ -40,11 +41,40 @@ export default function DashboardPage() {
         .catch(err => console.error(err));
         
       loadEnrollments();
+
+      fetch('/api/subject')
+        .then(res => res.json())
+        .then(data => {
+          if (!data.error && Array.isArray(data)) {
+            setAvailableSubjects(data);
+          }
+        })
+        .catch(err => console.error(err));
     }
   }, [userId]);
 
   const handleFormChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'subject_id') {
+      const selected = availableSubjects.find(s => s.subject_id === value);
+      if (selected) {
+        setForm({
+          ...form,
+          subject_id: selected.subject_id,
+          subject_name: selected.subject_name || '',
+          subject_detail: selected.subject_detail || ''
+        });
+      } else {
+        setForm({
+          ...form,
+          subject_id: value,
+          subject_name: '',
+          subject_detail: ''
+        });
+      }
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
   function formatTime(slotTime) {
@@ -195,15 +225,22 @@ export default function DashboardPage() {
           <div className="form-col-left-span">
             <div className="form-group">
               <label className="form-label">รหัสวิชา :</label>
-              <input className="form-input" name="subject_id" value={form.subject_id} onChange={handleFormChange} />
+              <select className="form-select" name="subject_id" value={form.subject_id} onChange={handleFormChange}>
+                <option value="">-- เลือกรหัสวิชา --</option>
+                {availableSubjects.map(sub => (
+                  <option key={sub.subject_id} value={sub.subject_id}>
+                    {sub.subject_id} - {sub.subject_name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="form-group">
               <label className="form-label">วิชา :</label>
-              <input className="form-input" name="subject_name" value={form.subject_name} onChange={handleFormChange} />
+              <input className="form-input" name="subject_name" value={form.subject_name} readOnly style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} />
             </div>
             <div className="form-group" style={{ flex: 1 }}>
               <label className="form-label">รายละเอียด :</label>
-              <textarea className="form-textarea" name="subject_detail" rows={3} value={form.subject_detail} onChange={handleFormChange} />
+              <textarea className="form-textarea" name="subject_detail" rows={3} value={form.subject_detail} readOnly style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} />
             </div>
           </div>
 

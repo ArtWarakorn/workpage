@@ -35,7 +35,7 @@ export default function DetailPage() {
   // Load works for this subject
   const loadWorks = async () => {
     try {
-      const res = await fetch(`/api/work?subjectId=${subjectId}`);
+      const res = await fetch(`/api/work?subjectId=${subjectId}&userId=${userId}`);
       const data = await res.json();
       if (Array.isArray(data)) setWorks(data);
     } catch (err) {
@@ -71,6 +71,7 @@ export default function DetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subject_id: subjectId,
+          users_id: userId,
           work_title: form.work_title,
           work_date_end: form.work_date_end || null,
           work_detail: form.work_detail || null,
@@ -117,7 +118,7 @@ export default function DetailPage() {
     if (!confirm(`ยืนยันการลบงานที่เสร็จแล้วทั้งหมด ${doneCount} รายการ?`)) return;
     setIsDeletingDone(true);
     try {
-      const res = await fetch(`/api/work/done?subjectId=${subjectId}`, {
+      const res = await fetch(`/api/work/done?subjectId=${subjectId}&userId=${userId}`, {
         method: 'DELETE',
       });
       if (res.ok) {

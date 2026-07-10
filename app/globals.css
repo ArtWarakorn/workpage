@@ -109,6 +109,51 @@ html, body {
   box-shadow: 0 0 0 3px rgba(135,206,235,0.6);
 }
 
+.auth-input-file {
+  width: 100%;
+  padding: 10px 24px;
+  background: var(--white);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-main);
+  color: var(--text-dark);
+  cursor: pointer;
+  outline: none;
+  border: none;
+}
+
+.auth-input-file::file-selector-button {
+  background: var(--sky-mid);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  margin-right: 16px;
+  cursor: pointer;
+  font-family: var(--font-main);
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.auth-input-file::file-selector-button:hover {
+  background: var(--ocean-dark);
+}
+
+.auth-preview-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.auth-preview-img {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid var(--sky-mid);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
 .auth-actions {
   display: flex;
   flex-direction: column;

@@ -1,13 +1,14 @@
 import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
-// GET /api/work?subjectId=CSCXXX
+// GET /api/work?subjectId=CSCXXX&userId=123
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const subjectId = searchParams.get('subjectId');
+    const userId = searchParams.get('userId');
 
-    if (!subjectId) {
-        return NextResponse.json({ error: "subjectId required" }, { status: 400 });
+    if (!subjectId || !userId) {
+        return NextResponse.json({ error: "subjectId and userId required" }, { status: 400 });
     }
 
     try {
@@ -16,6 +17,7 @@ export async function GET(request) {
             .from('work')
             .select('*')
             .eq('subject_id', subjectId)
+            .eq('users_id', userId)
             .order('work_date_end', { ascending: true });
 
         if (error) throw error;
@@ -29,10 +31,10 @@ export async function GET(request) {
 export async function POST(request) {
     try {
         const body = await request.json();
-        const { subject_id, work_title, work_date_end, work_detail, work_status } = body;
+        const { subject_id, users_id, work_title, work_date_end, work_detail, work_status } = body;
 
-        if (!subject_id || !work_title) {
-            return NextResponse.json({ error: "subject_id and work_title required" }, { status: 400 });
+        if (!subject_id || !work_title || !users_id) {
+            return NextResponse.json({ error: "subject_id, users_id and work_title required" }, { status: 400 });
         }
 
         const { data, error } = await supabase
@@ -40,6 +42,7 @@ export async function POST(request) {
             .from('work')
             .insert({
                 subject_id,
+                users_id,
                 work_title,
                 work_date_end: work_date_end || null,
                 work_detail: work_detail || null,

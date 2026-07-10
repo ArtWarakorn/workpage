@@ -32,15 +32,9 @@ export async function POST(request) {
         const body = await request.json();
         const { userId, subject_id, subject_name, subject_detail, enroll_day, start_time, end_time } = body;
 
-        // 1. Upsert subject
-        const { error: subjectError } = await supabase
-            .schema('workpage')
-            .from('subject')
-            .upsert({ subject_id, subject_name, subject_detail });
-            
-        if (subjectError) throw subjectError;
-
-        // 2. Insert enroll
+        // We no longer upsert the subject here because subjects are managed by admin.
+        
+        // Insert enroll
         const { data, error: enrollError } = await supabase
             .schema('workpage')
             .from('enroll')
