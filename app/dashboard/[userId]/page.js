@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const params = useParams();
   const userId = params?.userId;
   const [user, setUser] = useState(null);
@@ -206,6 +207,10 @@ export default function DashboardPage() {
           )}
         </div>
         <p className="sidebar-username">User Name : {user?.users_name || '...'}</p>
+        
+        <button className="sidebar-logout-btn" onClick={() => router.push('/login')}>
+          Logout
+        </button>
 
         <nav className="sidebar-nav">
           <a className="sidebar-nav-btn active" href="">จัดตรางเรียน</a>
