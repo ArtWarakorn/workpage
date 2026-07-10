@@ -9,6 +9,8 @@ git clone https://github.com/ArtWarakorn/workpage
 go to this web = https://supabase.com/  "log in"
 
 coppy file database.db and past
+go to file .env.example add your supabase_url and service_role_key
+
 
 open cmd or terminal
 
