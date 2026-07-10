@@ -1,0 +1,93 @@
+-- ============================================================
+-- Backup: schema "workpage"
+-- Generated: 2026-07-10
+-- Purpose : สำหรับ restore ใน localhost/dev เท่านั้น (ไม่ใช้ deploy จริง)
+--
+-- เนื้อหา:
+--   - โครงสร้างตาราง (structure) ของทั้ง 4 ตาราง: users, subject, enroll, work
+--   - ข้อมูล (data) เฉพาะตาราง "subject" เท่านั้น ตามที่ระบุ
+--   - ตาราง users / enroll / work : โครงสร้างล้วน ไม่มี data
+-- ============================================================
+
+begin;
+
+-- ------------------------------------------------------------
+-- Schema
+-- ------------------------------------------------------------
+create schema if not exists workpage;
+
+-- ------------------------------------------------------------
+-- Sequences (ต้องสร้างก่อนตารางที่อ้างถึง)
+-- ------------------------------------------------------------
+create sequence if not exists workpage.users_users_id_seq;
+create sequence if not exists workpage.work_work_id_seq;
+
+-- ------------------------------------------------------------
+-- Table: workpage.users
+-- ------------------------------------------------------------
+create table workpage.users (
+    users_id           integer primary key default nextval('workpage.users_users_id_seq'::regclass),
+    users_name         text not null,
+    password           text not null,
+    users_profile_url  text
+);
+
+alter sequence workpage.users_users_id_seq owned by workpage.users.users_id;
+
+-- ------------------------------------------------------------
+-- Table: workpage.subject
+-- ------------------------------------------------------------
+create table workpage.subject (
+    subject_id      text primary key,
+    subject_name    text not null,
+    subject_detail  text
+);
+
+-- ------------------------------------------------------------
+-- Table: workpage.enroll
+-- ------------------------------------------------------------
+create table workpage.enroll (
+    users_id    integer not null references workpage.users(users_id),
+    subject_id  text    not null references workpage.subject(subject_id),
+    enroll_day  text,
+    start_time  time without time zone,
+    end_time    time without time zone,
+    primary key (users_id, subject_id)
+);
+
+-- ------------------------------------------------------------
+-- Table: workpage.work
+-- ------------------------------------------------------------
+create table workpage.work (
+    work_id          integer primary key default nextval('workpage.work_work_id_seq'::regclass),
+    work_title       text not null,
+    work_date_start  date default current_date,
+    work_date_end    date,
+    work_detail      text,
+    work_status      boolean default false,
+    subject_id       text not null references workpage.subject(subject_id),
+    users_id         integer references workpage.users(users_id)
+);
+
+alter sequence workpage.work_work_id_seq owned by workpage.work.work_id;
+
+-- ------------------------------------------------------------
+-- Data: workpage.subject เท่านั้น (ตามต้นฉบับ ณ วันที่ backup)
+-- ------------------------------------------------------------
+insert into workpage.subject (subject_id, subject_name, subject_detail) values
+    ('csc420', 'test', 'test'),
+    ('csc350', 'web app', 'test');
+
+-- ------------------------------------------------------------
+-- ปรับ sequence ให้ตรงกับต้นฉบับ (กัน id ชนกันถ้า insert ต่อ)
+-- ------------------------------------------------------------
+select setval('workpage.users_users_id_seq', 1, true);
+select setval('workpage.work_work_id_seq', 9, true);
+
+commit;
+
+-- ============================================================
+-- วิธีใช้งาน (localhost):
+--   psql "postgresql://postgres:<password>@localhost:5432/postgres" -f workpage_backup.sql
+-- หรือรันผ่าน Supabase Studio (local) > SQL Editor แล้ววางทั้งไฟล์
+-- ============================================================
