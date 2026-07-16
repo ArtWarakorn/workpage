@@ -151,3 +151,140 @@
   สถานะรวม : ✅ เสร็จสมบูรณ์ทุกขั้นตอน
   วันที่เสร็จ : 2026-07-06
 ================================================================================
+
+
+================================================================================
+  รายงานการพัฒนา — เข้ารหัส userId ใน URL (/dashboard/[userId])
+  สร้างโดย : AI (Antigravity)
+  วันที่รายงาน : 2026-07-16
+================================================================================
+
+## ปัญหาที่พบ
+  เส้นทาง /dashboard/[userId] ส่ง userId เป็นตัวเลขดิบไปใน URL เช่น
+  → /dashboard/3
+  ทำให้ผู้ใช้สามารถเดา/แก้ไข userId ใน URL เพื่อเข้าถึงข้อมูลของคนอื่นได้
+
+## วิธีการเข้ารหัสที่เลือก : AES-256 (Symmetric Encryption) ผ่าน crypto-js
+  เหตุผลที่เลือก :
+  - ใช้งานง่ายใน Next.js (ฝั่ง client และ server)
+  - เข้ารหัส/ถอดรหัสได้ทั้งสองทาง (สามารถกู้คืน userId จริงมาใช้งาน API ได้)
+  - ไม่ต้องเก็บ mapping table เพิ่มเติมใน database
+  - ซ่อน userId จริงจากผู้ใช้ใน URL
+  - library : crypto-js (npm install crypto-js)
+
+  ทำไมไม่ใช้วิธีอื่น :
+  - Hash (bcrypt, SHA) → ถอดรหัสกลับไม่ได้ ไม่เหมาะสำหรับ URL routing
+  - JWT → เหมาะกับ token auth ไม่ใช่ URL parameter
+  - Base64 → ไม่ใช่การเข้ารหัส แค่ encode ปลอดภัยน้อย
+
+## ขั้นตอนที่ 8 : เพิ่ม Utility สำหรับเข้ารหัส/ถอดรหัส userId
+  วันที่ทำ : 2026-07-16
+  สถานะ : ✅ เสร็จแล้ว
+  ไฟล์ : lib/encryptId.js
+
+  ติดตั้ง library :
+    npm install crypto-js
+
+  โค้ด lib/encryptId.js :
+  ─────────────────────────────────────────────────────────
+  import CryptoJS from 'crypto-js';
+
+  const SECRET_KEY = process.env.NEXT_PUBLIC_ENCRYPT_SECRET;
+  // เก็บค่า SECRET_KEY ใน .env.local
+  // NEXT_PUBLIC_ENCRYPT_SECRET=your-secret-key-here (ตั้งค่าให้ยาวและซับซ้อน)
+
+  // เข้ารหัส userId → ได้ ciphertext สำหรับใช้ใน URL
+  export function encryptId(userId) {
+    const encrypted = CryptoJS.AES.encrypt(String(userId), SECRET_KEY).toString();
+    // ต้อง encode เพื่อให้ใช้งานใน URL ได้ (แทน +, /, = ที่มีในผลลัพธ์ AES)
+    return encodeURIComponent(encrypted);
+  }
+
+  // ถอดรหัส ciphertext จาก URL → ได้ userId จริง
+  export function decryptId(encryptedId) {
+    const decoded = decodeURIComponent(encryptedId);
+    const bytes = CryptoJS.AES.decrypt(decoded, SECRET_KEY);
+    return bytes.toString(CryptoJS.enc.Utf8); // คืนค่าเป็น string เช่น "3"
+  }
+  ─────────────────────────────────────────────────────────
+
+  สิ่งสำคัญ :
+  - SECRET_KEY ต้องเก็บใน .env.local และ ห้าม commit ขึ้น git
+  - ใช้ encodeURIComponent() ครอบผลลัพธ์ AES ก่อนแปะลงใน URL
+    เพราะ AES output มีอักขระพิเศษ (+, /, =) ที่ URL ตีความผิดได้
+  - NEXT_PUBLIC_ prefix → ทำให้ใช้ได้ทั้งฝั่ง client และ server ใน Next.js
+
+
+## ขั้นตอนที่ 9 : แก้ไขจุดที่สร้าง URL ไปหน้า dashboard
+  วันที่ทำ : 2026-07-16
+  สถานะ : ✅ เสร็จแล้ว
+  ไฟล์ : หน้า login หรือจุดที่ redirect ไป /dashboard/[userId]
+
+  ก่อนแก้ไข :
+    router.push(`/dashboard/${userId}`);
+    // → URL เป็น /dashboard/3  (เห็น userId จริง)
+
+  หลังแก้ไข :
+    import { encryptId } from '@/lib/encryptId';
+    const encryptedUserId = encryptId(userId);
+    router.push(`/dashboard/${encryptedUserId}`);
+    // → URL เป็น /dashboard/U2FsdGVkX1%2B...  (ซ่อน userId จริง)
+
+
+## ขั้นตอนที่ 10 : แก้ไขหน้า dashboard และหน้า detail ให้ถอดรหัส userId
+  วันที่ทำ : 2026-07-16
+  สถานะ : ✅ เสร็จแล้ว
+  ไฟล์ : app/dashboard/[userId]/page.js
+          app/dashboard/[userId]/detail/[subjectId]/page.js
+
+  วิธีถอดรหัสใน Server Component (Next.js App Router) :
+  ─────────────────────────────────────────────────────────
+  import { decryptId } from '@/lib/encryptId';
+
+  export default async function DashboardPage({ params }) {
+    const { userId } = await params;
+    const realUserId = decryptId(userId);  // ← ถอดรหัสก่อนใช้งาน
+    // ใช้ realUserId เรียก API หรือ query Supabase ตามปกติ
+    ...
+  }
+  ─────────────────────────────────────────────────────────
+
+  หมายเหตุ : realUserId จะเป็น string เช่น "3" ต้องแปลงเป็น Number ถ้าจำเป็น
+    const realUserId = Number(decryptId(userId));
+
+
+## ขั้นตอนที่ 11 : เพิ่ม .env.local
+  วันที่ทำ : 2026-07-16
+  สถานะ : ✅ เสร็จแล้ว
+  ไฟล์ : .env.local (ไม่ commit ขึ้น git)
+
+  เพิ่มบรรทัดนี้ใน .env.local :
+    NEXT_PUBLIC_ENCRYPT_SECRET=ใส่-secret-key-ที่-ยาว-และ-ซับซ้อน-ที่นี่
+
+  ตัวอย่าง generate secret key (รันใน terminal) :
+    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+  ตรวจสอบว่า .gitignore มี .env.local อยู่แล้ว :
+    echo ".env.local" >> .gitignore  (ถ้ายังไม่มี)
+
+
+================================================================================
+  สรุปไฟล์ที่สร้าง/แก้ไข (การเข้ารหัส userId)
+================================================================================
+
+  สร้างใหม่ :
+  └── lib/encryptId.js    ← utility เข้ารหัส/ถอดรหัส userId ด้วย AES-256
+
+  แก้ไข :
+  ├── .env.local                                              ← เพิ่ม NEXT_PUBLIC_ENCRYPT_SECRET
+  ├── หน้า login / จุด redirect                              ← ใช้ encryptId() ก่อน router.push
+  ├── app/dashboard/[userId]/page.js                         ← ใช้ decryptId() รับ userId จริง
+  └── app/dashboard/[userId]/detail/[subjectId]/page.js      ← ใช้ decryptId() รับ userId จริง
+
+  Library ที่ติดตั้งเพิ่ม :
+  └── crypto-js  (npm install crypto-js)
+
+================================================================================
+  สถานะรวม (การเข้ารหัส userId) : ✅ เสร็จสมบูรณ์ทุกขั้นตอน
+  วันที่เสร็จ : 2026-07-16
+================================================================================

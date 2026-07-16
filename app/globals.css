@@ -1068,3 +1068,196 @@ html, body {
 .detail-cancel-btn:hover {
   background: #555;
 }
+
+/* ============================================
+   ENROLL EDIT BUTTON (ปุ่ม ✏️ บนบล็อกสีม่วง)
+   ============================================ */
+
+.enroll-edit-btn {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.18);
+  border: none;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 11px;
+  cursor: pointer;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+/* แสดงปุ่มเมื่อ hover ที่ wrapper div */
+div:hover > .enroll-edit-btn {
+  opacity: 1;
+}
+
+.enroll-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.38);
+}
+
+/* ============================================
+   EDIT MODAL — แก้ไขตารางเรียน
+   ============================================ */
+
+.edit-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeInOverlay 0.18s ease;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.edit-modal-card {
+  background: #1e1e2e;
+  border: 1px solid #3b3b5c;
+  border-radius: 16px;
+  padding: 28px;
+  width: 360px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  animation: slideUpModal 0.2s ease;
+}
+
+@keyframes slideUpModal {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.edit-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.edit-modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e0e7ff;
+  font-family: var(--font-main);
+}
+
+.edit-modal-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.edit-modal-close:hover {
+  background: #2d2d44;
+  color: #fff;
+}
+
+.edit-modal-subject-badge {
+  background: #2d2d44;
+  border: 1px solid #4f46e5;
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: #a5b4fc;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.edit-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.edit-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.edit-modal-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.edit-modal-select,
+.edit-modal-input {
+  background: #12121f;
+  border: 1px solid #3b3b5c;
+  border-radius: 8px;
+  color: #e2e8f0;
+  padding: 9px 12px;
+  font-size: 0.95rem;
+  font-family: var(--font-main);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.edit-modal-select:focus,
+.edit-modal-input:focus {
+  border-color: #6366f1;
+}
+
+.edit-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.edit-modal-cancel-btn {
+  background: #2d2d44;
+  border: 1px solid #3b3b5c;
+  border-radius: 8px;
+  color: #94a3b8;
+  padding: 9px 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: background 0.15s, color 0.15s;
+}
+
+.edit-modal-cancel-btn:hover:not(:disabled) {
+  background: #3b3b5c;
+  color: #e2e8f0;
+}
+
+.edit-modal-save-btn {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  padding: 9px 22px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-main);
+  transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+}
+
+.edit-modal-save-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.edit-modal-save-btn:disabled,
+.edit-modal-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

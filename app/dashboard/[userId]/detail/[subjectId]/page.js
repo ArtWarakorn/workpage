@@ -1,11 +1,14 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { decryptId } from '@/lib/encryptId';
 
 export default function DetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { userId, subjectId } = params;
+  const { userId: encryptedUserId, subjectId } = params;
+  // ถอดรหัส userId จาก URL เพื่อใช้กับ API
+  const userId = encryptedUserId ? decryptId(encryptedUserId) : null;
 
   const [subject, setSubject] = useState(null);
   const [works, setWorks] = useState([]);
@@ -191,7 +194,7 @@ export default function DetailPage() {
 
         <button
           className="detail-back-btn"
-          onClick={() => router.push(`/dashboard/${userId}`)}
+          onClick={() => router.push(`/dashboard/${encryptedUserId}`)}
         >
           ← กลับ
         </button>

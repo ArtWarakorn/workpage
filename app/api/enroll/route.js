@@ -55,6 +55,30 @@ export async function POST(request) {
     }
 }
 
+export async function PATCH(request) {
+    try {
+        const body = await request.json();
+        const { userId, subject_id, enroll_day, start_time, end_time } = body;
+
+        if (!userId || !subject_id) {
+            return NextResponse.json({ error: "userId and subject_id required" }, { status: 400 });
+        }
+
+        const { data, error } = await supabase
+            .schema('workpage')
+            .from('enroll')
+            .update({ enroll_day, start_time, end_time })
+            .eq('users_id', parseInt(userId))
+            .eq('subject_id', subject_id)
+            .select();
+
+        if (error) throw error;
+        return NextResponse.json(data[0]);
+    } catch (err) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
 export async function DELETE(request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');

@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { encryptId } from '@/lib/encryptId';
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,7 +29,9 @@ export default function LoginPage() {
       const data = await res.json();
       
       if (res.ok) {
-        router.push(`/dashboard/${data.users_id}`);
+        const encryptedId = encryptId(data.users_id);
+        router.push(`/dashboard/${encryptedId}`);
+
       } else {
         setError(data.error || 'Login failed');
       }
