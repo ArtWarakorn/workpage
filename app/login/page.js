@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { encryptId } from '@/lib/encryptId';
 
 
 export default function LoginPage() {
@@ -29,7 +28,7 @@ export default function LoginPage() {
       const data = await res.json();
       
       if (res.ok) {
-        const encryptedId = encryptId(data.users_id);
+        const encryptedId = data.encryptedId;
         router.push(`/dashboard/${encryptedId}`);
 
       } else {
