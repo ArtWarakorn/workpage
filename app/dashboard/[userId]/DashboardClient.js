@@ -235,7 +235,7 @@ export default function DashboardClient({ userId, encryptedUserId }) {
             </div>
           </div>
 
-          <div style={{ gridColumn: 2, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="form-col-center-panel">
             <div className="form-group">
               <label className="form-label">วันที่ :</label>
               <select className="form-select" name="day" value={form.day} onChange={handleFormChange}>

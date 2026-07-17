@@ -400,6 +400,13 @@ html, body {
   gap: 6px;
 }
 
+.form-col-center-panel {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 /* Buttons */
 .form-buttons {
   grid-column: 3;
@@ -497,7 +504,7 @@ html, body {
   margin-bottom: 16px;
   padding-left: 80px;
   flex-wrap: nowrap;
-  overflow-x: auto;
+  width: max-content;
 }
 
 .time-slot-chip {
@@ -678,17 +685,65 @@ html, body {
     padding: 16px;
     gap: 12px;
   }
+  .sidebar-avatar, .sidebar-username, .sidebar-logout-btn {
+    margin-bottom: 0;
+  }
   .sidebar-nav {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
   }
+  .sidebar-nav-btn {
+    width: auto;
+    flex: 1;
+    min-width: 150px;
+  }
   .task-form-panel {
     grid-template-columns: 1fr 1fr;
     padding: 16px;
   }
+  .form-col-left-span {
+    grid-column: 1;
+    grid-row: 1 / 3;
+  }
+  .form-col-center-panel {
+    grid-column: 2;
+    grid-row: 1;
+  }
   .form-buttons {
     grid-column: 2;
+    grid-row: 2;
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .detail-layout {
+    flex-direction: column;
+  }
+  .detail-sidebar {
+    width: 100%;
+    padding: 30px 20px;
+    gap: 24px;
+    align-items: center;
+    text-align: center;
+  }
+  .detail-sidebar-info {
+    width: 100%;
+    align-items: center;
+  }
+  .detail-stats {
+    width: 100%;
+    justify-content: center;
+  }
+  .detail-add-btn,
+  .detail-back-btn,
+  .detail-delete-done-btn {
+    width: 100%;
+    max-width: 300px;
+  }
+  .detail-main {
+    padding: 30px 20px;
   }
 }
 
@@ -704,12 +759,44 @@ html, body {
   }
   .form-col-left, .form-col-center,
   .form-col-right, .form-col-left-span,
+  .form-col-center-panel,
   .form-buttons {
     grid-column: 1;
     grid-row: auto;
   }
-  .time-slots-row {
-    padding-left: 0;
+  .form-buttons {
+    padding-top: 12px;
+  }
+  .detail-modal {
+    padding: 28px 20px;
+    border-radius: 16px;
+    width: 95%;
+  }
+  .detail-form-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .detail-form-group label {
+    width: 100%;
+    text-align: left;
+    font-size: 1rem;
+  }
+  .detail-select {
+    width: 100%;
+  }
+  .detail-cancel-btn, .detail-save-btn {
+    padding: 10px 24px;
+    font-size: 1rem;
+  }
+  .task-card {
+    padding: 20px 24px;
+    border-radius: 16px;
+    font-size: 1rem;
+  }
+  .task-card-dates {
+    flex-direction: column;
+    gap: 8px;
   }
 }
 
@@ -819,7 +906,8 @@ html, body {
   background: #D9D9D9; /* Grey from image */
   border-radius: 24px;
   padding: 40px 60px;
-  width: 700px;
+  width: 90%;
+  max-width: 700px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
@@ -1124,7 +1212,8 @@ div:hover > .enroll-edit-btn {
   border: 1px solid #3b3b5c;
   border-radius: 16px;
   padding: 28px;
-  width: 360px;
+  width: 90%;
+  max-width: 360px;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
   animation: slideUpModal 0.2s ease;
 }
