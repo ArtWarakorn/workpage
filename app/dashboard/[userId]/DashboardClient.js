@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import NotificationCenter from "@/components/NotificationCenter";
 
 export default function DashboardClient({ userId, encryptedUserId }) {
   const router = useRouter();
@@ -183,6 +184,9 @@ export default function DashboardClient({ userId, encryptedUserId }) {
 
   return (
     <div className="dashboard-layout">
+
+      {/* Floating Top-Right Notification Center */}
+      <NotificationCenter userId={userId} encryptedUserId={encryptedUserId} />
 
       {/* ===== Sidebar ===== */}
       <aside className="sidebar">

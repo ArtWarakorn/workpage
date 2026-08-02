@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import NotificationCenter from '@/components/NotificationCenter';
 
 export default function DetailClient({ userId, encryptedUserId, subjectId }) {
   const router = useRouter();
@@ -47,6 +48,31 @@ export default function DetailClient({ userId, encryptedUserId, subjectId }) {
       Promise.all([loadSubject(), loadWorks()]).finally(() => setLoading(false));
     }
   }, [subjectId]);
+
+  // Helper for rendering urgency badge on task card
+  const getDeadlineBadge = (endDateStr, isDone) => {
+    if (isDone || !endDateStr) return null;
+    const parts = endDateStr.split('-');
+    if (parts.length !== 3) return null;
+    const endYear = parseInt(parts[0], 10);
+    const endMonth = parseInt(parts[1], 10) - 1;
+    const endDay = parseInt(parts[2], 10);
+    const endDate = new Date(endYear, endMonth, endDay);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return <span className="notif-urgency-badge urgency-overdue" style={{ marginLeft: 8 }}>🚨 เลยกำหนด {Math.abs(diffDays)} วัน</span>;
+    } else if (diffDays === 0) {
+      return <span className="notif-urgency-badge urgency-today" style={{ marginLeft: 8 }}>⚡ หมดเขตวันนี้!</span>;
+    } else if (diffDays === 1) {
+      return <span className="notif-urgency-badge urgency-soon" style={{ marginLeft: 8 }}>⚠️ ส่งพรุ่งนี้!</span>;
+    } else if (diffDays <= 3) {
+      return <span className="notif-urgency-badge urgency-soon" style={{ marginLeft: 8 }}>⏰ เหลือ {diffDays} วัน</span>;
+    }
+    return null;
+  };
 
   // Handle form input change
   const handleFormChange = (e) => {
@@ -145,8 +171,12 @@ export default function DetailClient({ userId, encryptedUserId, subjectId }) {
 
   return (
     <div className="detail-layout">
+      {/* Floating Top-Right Notification Center */}
+      <NotificationCenter userId={userId} encryptedUserId={encryptedUserId} onWorkUpdated={loadWorks} />
+
       {/* ===== Sidebar ===== */}
       <div className="detail-sidebar">
+
         <div className="detail-sidebar-info">
           <p><strong>รหัสวิชา :</strong> {subject?.subject_id || subjectId}</p>
           <p><strong>วิชา :</strong> {subject?.subject_name || '—'}</p>
@@ -210,9 +240,13 @@ export default function DetailClient({ userId, encryptedUserId, subjectId }) {
                 key={work.work_id}
                 className={`task-card ${work.work_status ? 'status-done' : 'status-pending'}`}
               >
-                <p><strong>หัวข้อ :</strong> {work.work_title}</p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                  <p style={{ margin: 0 }}><strong>หัวข้อ :</strong> {work.work_title}</p>
+                  {getDeadlineBadge(work.work_date_end, work.work_status)}
+                </div>
+
                 {work.work_detail && (
-                  <p><strong>รายละเอียด :</strong> {work.work_detail}</p>
+                  <p style={{ marginTop: 6 }}><strong>รายละเอียด :</strong> {work.work_detail}</p>
                 )}
                 <div className="task-card-dates">
                   {work.work_date_start && (

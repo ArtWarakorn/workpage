@@ -1,26 +1,45 @@
 import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
-// GET /api/work?subjectId=CSCXXX&userId=123
+// GET /api/work?userId=123&subjectId=CSCXXX
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const subjectId = searchParams.get('subjectId');
     const userId = searchParams.get('userId');
 
-    if (!subjectId || !userId) {
-        return NextResponse.json({ error: "subjectId and userId required" }, { status: 400 });
+    if (!userId) {
+        return NextResponse.json({ error: "userId required" }, { status: 400 });
     }
 
     try {
-        const { data, error } = await supabase
+        let query = supabase
             .schema('workpage')
             .from('work')
-            .select('*')
-            .eq('subject_id', subjectId)
-            .eq('users_id', userId)
-            .order('work_date_end', { ascending: true });
+            .select('*, subject:subject_id (subject_name)');
 
-        if (error) throw error;
+        if (subjectId) {
+            query = query.eq('subject_id', subjectId);
+        }
+        query = query.eq('users_id', userId);
+
+        let { data, error } = await query.order('work_date_end', { ascending: true });
+
+        if (error) {
+            // Fallback in case join relation is not configured in Supabase
+            let fallbackQuery = supabase
+                .schema('workpage')
+                .from('work')
+                .select('*')
+                .eq('users_id', userId);
+
+            if (subjectId) {
+                fallbackQuery = fallbackQuery.eq('subject_id', subjectId);
+            }
+            const fallbackRes = await fallbackQuery.order('work_date_end', { ascending: true });
+            if (fallbackRes.error) throw fallbackRes.error;
+            data = fallbackRes.data;
+        }
+
         return NextResponse.json(data);
     } catch (err) {
         return NextResponse.json({ error: err.message }, { status: 500 });
