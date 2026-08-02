@@ -30,5 +30,6 @@ export async function POST(request) {
         return NextResponse.json({ ...data, encryptedId });
     } catch (err) {
         return NextResponse.json({ error: err.message }, { status: 500 });
+        
     }
 }

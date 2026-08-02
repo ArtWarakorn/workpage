@@ -89,6 +89,7 @@ export default function RegisterPage() {
       });
   }
 
+
   return (
     <div className="auth-page">
       <div className="auth-card">
