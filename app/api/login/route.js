@@ -26,8 +26,16 @@ export async function POST(request) {
         }
 
         const encryptedId = encryptId(data.users_id);
-        
-        return NextResponse.json({ ...data, encryptedId });
+
+        const response = NextResponse.json({ encryptedId });
+        response.cookies.set('session', encryptedId, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 60 * 60 * 24 * 7, // 7 วัน
+        });
+        return response;
     } catch (err) {
         return NextResponse.json({ error: err.message }, { status: 500 });
         

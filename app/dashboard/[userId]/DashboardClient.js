@@ -4,12 +4,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import NotificationCenter from "@/components/NotificationCenter";
 
-export default function DashboardClient({ userId, encryptedUserId }) {
+export default function DashboardClient({
+  userId,
+  encryptedUserId,
+  initialUser = null,
+  initialEnrollments = [],
+  initialSubjects = []
+}) {
   const router = useRouter();
 
-  const [user, setUser] = useState(null);
-  const [enrollments, setEnrollments] = useState([]);
-  const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [user, setUser] = useState(initialUser);
+  const [enrollments, setEnrollments] = useState(initialEnrollments);
+  const [availableSubjects, setAvailableSubjects] = useState(initialSubjects);
   const [form, setForm] = useState({
     subject_id: '',
     subject_name: '',
@@ -25,32 +31,32 @@ export default function DashboardClient({ userId, encryptedUserId }) {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   // ---- Load Data ----
-  const loadEnrollments = () => {
-    fetch(`/api/enroll?userId=${userId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (!data.error && Array.isArray(data)) {
-          setEnrollments(data);
-        }
-      })
-      .catch(err => console.error(err));
+  // ใช้สำหรับ refetch enrollments เดี่ยวๆ หลังจาก add/edit/delete
+  const loadEnrollments = async () => {
+    try {
+      const res = await fetch(`/api/enroll?userId=${userId}`);
+      const data = await res.json();
+      if (!data.error && Array.isArray(data)) setEnrollments(data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => {
-    if (userId) {
-      fetch(`/api/users/${userId}`)
-        .then(res => res.json())
-        .then(data => { if (!data.error) setUser(data); })
-        .catch(err => console.error(err));
-
-      loadEnrollments();
-
-      fetch('/api/subject')
-        .then(res => res.json())
-        .then(data => {
-          if (!data.error && Array.isArray(data)) setAvailableSubjects(data);
+    if (!userId) return;
+    // ถ้าไม่มี initialData มาจาก Server ค่อย fetch ฝั่ง client สำรอง
+    if (!initialUser || initialSubjects.length === 0) {
+      Promise.all([
+        fetch(`/api/users/${userId}`).then(r => r.json()),
+        fetch(`/api/enroll?userId=${userId}`).then(r => r.json()),
+        fetch('/api/subject').then(r => r.json()),
+      ])
+        .then(([userData, enrollData, subjectData]) => {
+          if (!userData.error)                              setUser(userData);
+          if (!enrollData.error && Array.isArray(enrollData)) setEnrollments(enrollData);
+          if (!subjectData.error && Array.isArray(subjectData)) setAvailableSubjects(subjectData);
         })
-        .catch(err => console.error(err));
+        .catch(err => console.error('Initial load error:', err));
     }
   }, [userId]);
 
@@ -75,7 +81,39 @@ export default function DashboardClient({ userId, encryptedUserId }) {
     return `${h.padStart(2, '0')}:${m}:00`;
   }
 
+  // ---- Overlap Detection ----
+  // คืน true ถ้า [startA, endA) ทับกับ [startB, endB) บนวันเดียวกัน
+  const hasTimeConflict = (day, newStartMins, newEndMins, excludeSubjectId = null) => {
+    return enrollments.some(e => {
+      if (e.enroll_day !== day) return false;
+      if (excludeSubjectId && e.subject_id === excludeSubjectId) return false;
+      if (!e.start_time || !e.end_time) return false;
+      const [sh, sm] = e.start_time.split(':').map(Number);
+      const [eh, em] = e.end_time.split(':').map(Number);
+      const eStart = sh * 60 + sm;
+      const eEnd   = eh * 60 + em;
+      // ทับกันเมื่อ interval overlap
+      return newStartMins < eEnd && newEndMins > eStart;
+    });
+  };
+
   const handleSave = async () => {
+    // ตรวจสอบ overlap ก่อนบันทึก
+    const [sh, sm] = form.startTime.split(':').map(Number);
+    const [eh, em] = form.endTime.split(':').map(Number);
+    const newStart = sh * 60 + sm;
+    const newEnd   = eh * 60 + em;
+
+    if (newEnd <= newStart) {
+      alert('เวลาออกต้องมากกว่าเวลาเริ่ม');
+      return;
+    }
+
+    if (hasTimeConflict(form.day, newStart, newEnd)) {
+      alert('เวลาเรียนของคุณทับกัน');
+      return;
+    }
+
     try {
       const res = await fetch('/api/enroll', {
         method: 'POST',
@@ -91,7 +129,7 @@ export default function DashboardClient({ userId, encryptedUserId }) {
         })
       });
       if (res.ok) { loadEnrollments(); handleClear(); }
-      else alert("Error saving class");
+      else alert('Error saving class');
     } catch(err) { console.error(err); }
   };
 
@@ -128,6 +166,23 @@ export default function DashboardClient({ userId, encryptedUserId }) {
 
   const handleEditSave = async () => {
     if (!editModal) return;
+
+    // ตรวจสอบ overlap ก่อนบันทึก (ยกเว้นวิชาที่กำลังแก้ไข)
+    const [sh, sm] = editForm.startTime.split(':').map(Number);
+    const [eh, em] = editForm.endTime.split(':').map(Number);
+    const newStart = sh * 60 + sm;
+    const newEnd   = eh * 60 + em;
+
+    if (newEnd <= newStart) {
+      alert('เวลาออกต้องมากกว่าเวลาเริ่ม');
+      return;
+    }
+
+    if (hasTimeConflict(editForm.day, newStart, newEnd, editModal.subject_id)) {
+      alert('เวลาเรียนของคุณทับกัน');
+      return;
+    }
+
     setIsSavingEdit(true);
     try {
       const res = await fetch('/api/enroll', {
@@ -186,7 +241,7 @@ export default function DashboardClient({ userId, encryptedUserId }) {
     <div className="dashboard-layout">
 
       {/* Floating Top-Right Notification Center */}
-      <NotificationCenter userId={userId} encryptedUserId={encryptedUserId} />
+      <NotificationCenter userId={userId} encryptedUserId={encryptedUserId} subjects={availableSubjects} />
 
       {/* ===== Sidebar ===== */}
       <aside className="sidebar">
@@ -198,7 +253,10 @@ export default function DashboardClient({ userId, encryptedUserId }) {
         </div>
         <p className="sidebar-username">User Name : {user?.users_name || '...'}</p>
 
-        <button className="sidebar-logout-btn" onClick={() => router.push('/login')}>
+        <button className="sidebar-logout-btn" onClick={async () => {
+            await fetch('/api/logout', { method: 'POST' });
+            router.push('/login');
+          }}>
           Logout
         </button>
 

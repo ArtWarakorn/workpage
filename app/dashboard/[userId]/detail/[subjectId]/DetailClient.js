@@ -3,12 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import NotificationCenter from '@/components/NotificationCenter';
 
-export default function DetailClient({ userId, encryptedUserId, subjectId }) {
+export default function DetailClient({
+  userId,
+  encryptedUserId,
+  subjectId,
+  initialSubject = null,
+  initialWorks = []
+}) {
   const router = useRouter();
 
-  const [subject, setSubject] = useState(null);
-  const [works, setWorks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [subject, setSubject] = useState(initialSubject);
+  const [works, setWorks] = useState(initialWorks);
+  const [loading, setLoading] = useState(!initialSubject);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeletingDone, setIsDeletingDone] = useState(false);
 
@@ -43,7 +49,7 @@ export default function DetailClient({ userId, encryptedUserId, subjectId }) {
   };
 
   useEffect(() => {
-    if (subjectId) {
+    if (subjectId && !initialSubject) {
       setLoading(true);
       Promise.all([loadSubject(), loadWorks()]).finally(() => setLoading(false));
     }
@@ -116,19 +122,34 @@ export default function DetailClient({ userId, encryptedUserId, subjectId }) {
     }
   };
 
-  // Toggle work status
+  // Toggle work status (Optimistic Update)
   const handleToggleStatus = async (work) => {
+    const newStatus = !work.work_status;
+    // 1. Optimistically update local UI state immediately
+    setWorks(prevWorks =>
+      prevWorks.map(w => w.work_id === work.work_id ? { ...w, work_status: newStatus } : w)
+    );
+
     try {
       const res = await fetch(`/api/work/${work.work_id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ work_status: !work.work_status }),
+        body: JSON.stringify({ work_status: newStatus }),
       });
-      if (res.ok) {
-        await loadWorks();
+      if (!res.ok) {
+        // Rollback on server error
+        setWorks(prevWorks =>
+          prevWorks.map(w => w.work_id === work.work_id ? { ...w, work_status: work.work_status } : w)
+        );
+        alert('ไม่สามารถอัปเดตสถานะงานได้');
       }
     } catch (err) {
       console.error(err);
+      // Rollback on network error
+      setWorks(prevWorks =>
+        prevWorks.map(w => w.work_id === work.work_id ? { ...w, work_status: work.work_status } : w)
+      );
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
     }
   };
 

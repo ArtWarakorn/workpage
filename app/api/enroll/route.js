@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { decryptId } from "@/lib/encryptId";
 
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
@@ -30,10 +32,16 @@ export async function GET(request) {
 export async function POST(request) {
     try {
         const body = await request.json();
-        const { userId, subject_id, subject_name, subject_detail, enroll_day, start_time, end_time } = body;
+        const { userId, subject_id, enroll_day, start_time, end_time } = body;
 
-        // We no longer upsert the subject here because subjects are managed by admin.
-        
+        // Validate required fields
+        if (!userId || !subject_id || !enroll_day || !start_time || !end_time) {
+            return NextResponse.json(
+                { error: "Missing required fields: userId, subject_id, enroll_day, start_time, end_time" },
+                { status: 400 }
+            );
+        }
+
         // Insert enroll
         const { data, error: enrollError } = await supabase
             .schema('workpage')
@@ -55,13 +63,25 @@ export async function POST(request) {
     }
 }
 
+
 export async function PATCH(request) {
     try {
+        // ตรวจสอบ session ownership
+        const cookieStore = await cookies();
+        const session = cookieStore.get('session')?.value;
+        if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        const sessionUserId = decryptId(session);
+
         const body = await request.json();
         const { userId, subject_id, enroll_day, start_time, end_time } = body;
 
         if (!userId || !subject_id) {
             return NextResponse.json({ error: "userId and subject_id required" }, { status: 400 });
+        }
+
+        // ตรวจสอบว่า session เป็นเจ้าของ userId ที่ส่งมา
+        if (!sessionUserId || String(sessionUserId) !== String(userId)) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         const { data, error } = await supabase
@@ -86,6 +106,17 @@ export async function DELETE(request) {
     if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
 
     try {
+        // ตรวจสอบ session ownership
+        const cookieStore = await cookies();
+        const session = cookieStore.get('session')?.value;
+        if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        const sessionUserId = decryptId(session);
+
+        // ตรวจสอบว่า session เป็นเจ้าของ userId ที่ส่งมา
+        if (!sessionUserId || String(sessionUserId) !== String(userId)) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
         const { error } = await supabase
             .schema('workpage')
             .from('enroll')

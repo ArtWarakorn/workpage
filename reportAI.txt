@@ -1,0 +1,18 @@
+
+
+────────────────────────────────────────────────────────────────────────────────
+  แนวทางที่ 4  Server-Side Pre-fetching (ดึงข้อมูลล่วงหน้าตั้งแต่ Server)
+────────────────────────────────────────────────────────────────────────────────
+
+  สถานะ : ✅ แก้ไขสำเร็จ
+  ไฟล์ที่แก้ไข :
+    1. app/dashboard/[userId]/page.js & DashboardClient.js
+    2. app/dashboard/[userId]/detail/[subjectId]/page.js & DetailClient.js
+
+  สิ่งที่ดำเนินการ :
+    - ใช้ Promise.all() ใน Server Component (page.js) เพื่อ query ข้อมูลจาก Supabase
+      (user, enrollments, availableSubjects, subject, works) ก่อนที่จะส่ง HTML และ Initial Data มาให้ Client
+    - รับ initialUser, initialEnrollments, initialSubjects, initialWorks ใน Client Component
+    - ยกเลิกการขึ้นหน้า "กำลังโหลดข้อมูล..." โดยเปิดหน้าเว็บปุ๊บ ข้อมูลแสดงผลปั๊บในทันที (0ms client delay)
+
+================================================================================

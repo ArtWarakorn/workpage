@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function NotificationCenter({ userId, encryptedUserId, onWorkUpdated }) {
+export default function NotificationCenter({ userId, encryptedUserId, onWorkUpdated, subjects = null }) {
   const router = useRouter();
   const [works, setWorks] = useState([]);
   const [subjectsMap, setSubjectsMap] = useState({});
@@ -13,16 +13,21 @@ export default function NotificationCenter({ userId, encryptedUserId, onWorkUpda
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Load subject names dictionary
+  // Load subject names dictionary — ใช้ prop ถ้ามี ไม่งั้น fetch เอง
   const fetchSubjects = async () => {
+    if (subjects !== null) {
+      // ใช้ subjects จาก parent โดยตรง ไม่ fetch ซ้ำ
+      const map = {};
+      subjects.forEach(s => { map[s.subject_id] = s.subject_name; });
+      setSubjectsMap(map);
+      return;
+    }
     try {
       const res = await fetch('/api/subject');
       const data = await res.json();
       if (Array.isArray(data)) {
         const map = {};
-        data.forEach(s => {
-          map[s.subject_id] = s.subject_name;
-        });
+        data.forEach(s => { map[s.subject_id] = s.subject_name; });
         setSubjectsMap(map);
       }
     } catch (err) {
@@ -39,6 +44,9 @@ export default function NotificationCenter({ userId, encryptedUserId, onWorkUpda
       const data = await res.json();
       if (Array.isArray(data)) {
         setWorks(data);
+      } else {
+        console.warn('Unexpected data format:', data);
+        setWorks([]);
       }
     } catch (err) {
       console.error('Error loading works for notification:', err);
@@ -47,8 +55,12 @@ export default function NotificationCenter({ userId, encryptedUserId, onWorkUpda
     }
   };
 
+  // re-build subjectsMap ทุกครั้งที่ subjects prop เปลี่ยน
   useEffect(() => {
     fetchSubjects();
+  }, [subjects]);
+
+  useEffect(() => {
     fetchUserWorks();
   }, [userId]);
 
@@ -63,21 +75,30 @@ export default function NotificationCenter({ userId, encryptedUserId, onWorkUpda
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Mark task as done from notification panel
+  // Mark task as done from notification panel (Optimistic Update)
   const handleMarkDone = async (e, workId) => {
     e.stopPropagation();
+    // Optimistically mark as done in local state
+    const previousWorks = works;
+    setWorks(prev => prev.map(w => w.work_id === workId ? { ...w, work_status: true } : w));
+    if (onWorkUpdated) onWorkUpdated();
+
     try {
       const res = await fetch(`/api/work/${workId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ work_status: true }),
       });
-      if (res.ok) {
-        fetchUserWorks();
+      if (!res.ok) {
+        // Rollback
+        setWorks(previousWorks);
         if (onWorkUpdated) onWorkUpdated();
       }
     } catch (err) {
       console.error('Error completing work:', err);
+      // Rollback
+      setWorks(previousWorks);
+      if (onWorkUpdated) onWorkUpdated();
     }
   };
 
