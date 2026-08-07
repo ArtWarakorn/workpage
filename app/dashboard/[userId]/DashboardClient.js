@@ -383,10 +383,10 @@ export default function DashboardClient({
                           href={`/dashboard/${encryptedUserId}/detail/${enroll.subject_id}`}
                           style={{
                             display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                            height: '100%', background: '#6366f1',
+                            height: '120%', background: '#6d63f1',
                             padding: '4px 28px 4px 8px',
                             color: '#fff', fontSize: '12px',
-                            border: '1px solid #4f46e5',
+                            border: '1px solid #4b46e5',
                             textDecoration: 'none', cursor: 'pointer',
                             transition: 'opacity 0.15s ease, transform 0.1s ease',
                           }}
