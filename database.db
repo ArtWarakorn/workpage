@@ -1,93 +1,104 @@
--- ============================================================
--- Backup: schema "workpage"
--- Generated: 2026-07-10
--- Purpose : สำหรับ restore ใน localhost/dev เท่านั้น (ไม่ใช้ deploy จริง)
---
--- เนื้อหา:
---   - โครงสร้างตาราง (structure) ของทั้ง 4 ตาราง: users, subject, enroll, work
---   - ข้อมูล (data) เฉพาะตาราง "subject" เท่านั้น ตามที่ระบุ
---   - ตาราง users / enroll / work : โครงสร้างล้วน ไม่มี data
--- ============================================================
+-- ============================================
+-- Backup: schema "workpage" (full)
+-- Project: ArtWarakorn's Project (gokzdfwrblvrnllyorel)
+-- Generated: 2026-08-07
+-- Tables: users, subject, work, enroll
+-- ============================================
 
-begin;
+CREATE SCHEMA IF NOT EXISTS workpage;
 
--- ------------------------------------------------------------
--- Schema
--- ------------------------------------------------------------
-create schema if not exists workpage;
-
--- ------------------------------------------------------------
--- Sequences (ต้องสร้างก่อนตารางที่อ้างถึง)
--- ------------------------------------------------------------
-create sequence if not exists workpage.users_users_id_seq;
-create sequence if not exists workpage.work_work_id_seq;
-
--- ------------------------------------------------------------
+-- ============================================
 -- Table: workpage.users
--- ------------------------------------------------------------
-create table workpage.users (
-    users_id           integer primary key default nextval('workpage.users_users_id_seq'::regclass),
-    users_name         text not null,
-    password           text not null,
-    users_profile_url  text
+-- ============================================
+CREATE SEQUENCE IF NOT EXISTS workpage.users_users_id_seq;
+
+CREATE TABLE workpage.users (
+    users_id integer PRIMARY KEY DEFAULT nextval('workpage.users_users_id_seq'),
+    users_name text NOT NULL,
+    password text NOT NULL,
+    users_profile_url text
 );
 
-alter sequence workpage.users_users_id_seq owned by workpage.users.users_id;
+ALTER SEQUENCE workpage.users_users_id_seq OWNED BY workpage.users.users_id;
 
--- ------------------------------------------------------------
+INSERT INTO workpage.users (users_id, users_name, password, users_profile_url) VALUES
+(1, 'admin', '$2b$10$WCQI1fp3RrRYXyvSdPJK6ubCOfIFj2ewmEKZtv3koEqphYFtcQbcm', 'https://gokzdfwrblvrnllyorel.supabase.co/storage/v1/object/public/profiles/1784179029295-admin.jpg'),
+(6705263, 'warakorn', '$2b$10$kLYHc.3O/vtqxadzbKFvr.K5U5e0M11L0JbdbC8JwFdWtG6T50bqS', 'https://gokzdfwrblvrnllyorel.supabase.co/storage/v1/object/public/profiles/1784179692782-rover-wuthering-waves.png');
+
+SELECT setval('workpage.users_users_id_seq', (SELECT MAX(users_id) FROM workpage.users));
+
+-- ============================================
 -- Table: workpage.subject
--- ------------------------------------------------------------
-create table workpage.subject (
-    subject_id      text primary key,
-    subject_name    text not null,
-    subject_detail  text
+-- ============================================
+CREATE TABLE workpage.subject (
+    subject_id text PRIMARY KEY,
+    subject_name text NOT NULL,
+    subject_detail text
 );
 
--- ------------------------------------------------------------
--- Table: workpage.enroll
--- ------------------------------------------------------------
-create table workpage.enroll (
-    users_id    integer not null references workpage.users(users_id),
-    subject_id  text    not null references workpage.subject(subject_id),
-    enroll_day  text,
-    start_time  time without time zone,
-    end_time    time without time zone,
-    primary key (users_id, subject_id)
-);
+INSERT INTO workpage.subject (subject_id, subject_name, subject_detail) VALUES
+('CSC437', 'Information System Security', 'sec 01'),
+('CSC444', 'Machine Learning', 'sec 01'),
+('CSC447', 'Image Processing', 'sec 01'),
+('CSC454', 'ภาษาการโปรแกรม', NULL),
+('CSC472', 'AI', NULL),
+('CSC474', 'Computer network Design and Configuration', 'sec 01'),
+('CSC475', 'การวิเคราะห์ข้อมูลขนาดใหญ่', NULL),
+('CSC480', 'softwere engineer', NULL),
+('CSC485', 'วิธ๊วิทยาการวิจัยเบื่องต้น', NULL),
+('CSC487', 'กฏหมายคอมพิวเตอร์', NULL),
+('CSC490', 'Deep learning', 'sec 01'),
+('CSC492', 'โครงงานวิทยาการคอมพิวเตอร์', NULL),
+('RSU134', 'law ', 'sec 02'),
+('SBC101', 'Cyber_security', '');
 
--- ------------------------------------------------------------
+-- ============================================
 -- Table: workpage.work
--- ------------------------------------------------------------
-create table workpage.work (
-    work_id          integer primary key default nextval('workpage.work_work_id_seq'::regclass),
-    work_title       text not null,
-    work_date_start  date default current_date,
-    work_date_end    date,
-    work_detail      text,
-    work_status      boolean default false,
-    subject_id       text not null references workpage.subject(subject_id),
-    users_id         integer references workpage.users(users_id)
+-- ============================================
+CREATE SEQUENCE IF NOT EXISTS workpage.work_work_id_seq;
+
+CREATE TABLE workpage.work (
+    work_id integer PRIMARY KEY DEFAULT nextval('workpage.work_work_id_seq'),
+    work_title text NOT NULL,
+    work_date_start date DEFAULT CURRENT_DATE,
+    work_date_end date,
+    work_detail text,
+    work_status boolean DEFAULT false,
+    subject_id text NOT NULL REFERENCES workpage.subject(subject_id),
+    users_id integer REFERENCES workpage.users(users_id)
 );
 
-alter sequence workpage.work_work_id_seq owned by workpage.work.work_id;
+ALTER SEQUENCE workpage.work_work_id_seq OWNED BY workpage.work.work_id;
 
--- ------------------------------------------------------------
--- Data: workpage.subject เท่านั้น (ตามต้นฉบับ ณ วันที่ backup)
--- ------------------------------------------------------------
-insert into workpage.subject (subject_id, subject_name, subject_detail) values
-    ('csc420', 'test', 'test'),
-    ('csc350', 'web app', 'test');
+INSERT INTO workpage.work (work_id, work_title, work_date_start, work_date_end, work_detail, work_status, subject_id, users_id) VALUES
+(10, 'font-end', '2026-07-16', '2026-07-17', NULL, true, 'CSC454', 1),
+(11, 'api', '2026-07-17', '2026-07-18', $$สร้าง api โดยใช้ภาษา python
+และสร้างเว็บด้วยpython$$, true, 'CSC454', 1),
+(12, 'api', '2026-08-04', '2026-08-06', 'dwadadwadw', true, 'CSC475', 1),
+(13, 'test', '2026-08-04', '2026-08-04', 'dawdadad', true, 'CSC475', 1),
+(14, 'Test', '2026-08-07', '2026-08-08', 'Gusiejdjdjncncjcjcjcjckckckckxkckckxkdjdjdkdkclckdkdndnndndndjxjdjdmdncnjxkdkdkdjdhfjdjjxhdhhrbfjfjdjjejebebbrndudhehrhrhjejrhehehjejeidjdjdnebenrjrkdjdjddndjnffnnfnfnfnbfndnfjdjdkkdjdjrnrbdbdjjdnfbfnnskdjcjdjjdbrbfbbfbdjejdufhdjdhbrbdndnnfhdhd', false, 'CSC480', 1);
 
--- ------------------------------------------------------------
--- ปรับ sequence ให้ตรงกับต้นฉบับ (กัน id ชนกันถ้า insert ต่อ)
--- ------------------------------------------------------------
-select setval('workpage.users_users_id_seq', 1, true);
-select setval('workpage.work_work_id_seq', 9, true);
+SELECT setval('workpage.work_work_id_seq', (SELECT MAX(work_id) FROM workpage.work));
 
-commit;
+-- ============================================
+-- Table: workpage.enroll
+-- ============================================
+CREATE TABLE workpage.enroll (
+    users_id integer NOT NULL REFERENCES workpage.users(users_id),
+    subject_id text NOT NULL REFERENCES workpage.subject(subject_id),
+    enroll_day text,
+    start_time time,
+    end_time time,
+    PRIMARY KEY (users_id, subject_id)
+);
 
--- ============================================================
--- วิธีใช้งาน (localhost):
---   psql "postgresql://postgres:<password>@localhost:5432/postgres" -f workpage_backup.sql
--- หรือรันผ่าน Supabase Studio (local) > SQL Editor แล้ววางทั้งไฟล์
--- ============================================================
+INSERT INTO workpage.enroll (users_id, subject_id, enroll_day, start_time, end_time) VALUES
+(1, 'CSC480', 'Mon', '09:00:00', '10:30:00'),
+(1, 'CSC490', 'Wed', '10:30:00', '12:30:00'),
+(1, 'CSC492', 'Tue', '12:00:00', '15:30:00'),
+(6705263, 'CSC447', 'Mon', '13:00:00', '16:00:00'),
+(6705263, 'CSC475', 'Wed', '12:00:00', '15:00:00'),
+(6705263, 'CSC485', 'Thu', '13:00:00', '16:00:00'),
+(6705263, 'CSC487', 'Fri', '13:00:00', '16:00:00'),
+(6705263, 'RSU134', 'Tue', '12:00:00', '15:00:00'),
+(6705263, 'SBC101', 'Tue', '09:00:00', '11:00:00');

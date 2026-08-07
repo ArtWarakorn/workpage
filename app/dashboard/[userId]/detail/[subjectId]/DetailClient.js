@@ -26,6 +26,33 @@ export default function DetailClient({
     work_status: false,
   });
 
+  const [filter, setFilter] = useState('all'); // 'all' | 'pending' | 'done'
+
+  // Sort function: 
+  // 1. งานที่ยังไม่เสร็จ (work_status = false) อยู่ด้านบน, งานที่เสร็จแล้ว (work_status = true) ย้ายไปอยู่ด้านล่าง
+  // 2. เรียงตามกำหนดส่งที่ใกล้ที่สุดก่อน (work_date_end ascending)
+  const sortedAndFilteredWorks = React.useMemo(() => {
+    return works
+      .filter(work => {
+        if (filter === 'pending') return !work.work_status;
+        if (filter === 'done') return work.work_status;
+        return true;
+      })
+      .sort((a, b) => {
+        // 1. งานที่ยังไม่เสร็จขึ้นก่อนงานที่เสร็จแล้ว
+        if (a.work_status !== b.work_status) {
+          return a.work_status ? 1 : -1;
+        }
+        // 2. เรียงตามกำหนดส่งใกล้สุดก่อน
+        if (a.work_date_end && b.work_date_end) {
+          return a.work_date_end.localeCompare(b.work_date_end);
+        }
+        if (a.work_date_end) return -1;
+        if (b.work_date_end) return 1;
+        return 0;
+      });
+  }, [works, filter]);
+
   // Load subject info
   const loadSubject = async () => {
     try {
@@ -210,11 +237,21 @@ export default function DetailClient({
 
         {/* Stats */}
         <div className="detail-stats">
-          <div className="detail-stat-card stat-pending">
+          <div
+            className={`detail-stat-card stat-pending ${filter === 'pending' ? 'active-filter' : ''}`}
+            onClick={() => setFilter(prev => prev === 'pending' ? 'all' : 'pending')}
+            style={{ cursor: 'pointer' }}
+            title="คลิกเพื่อฟิลเตอร์งานที่ยังไม่เสร็จ"
+          >
             <span className="stat-num">{pendingCount}</span>
             <span className="stat-label">ยังไม่เสร็จ</span>
           </div>
-          <div className="detail-stat-card stat-done">
+          <div
+            className={`detail-stat-card stat-done ${filter === 'done' ? 'active-filter' : ''}`}
+            onClick={() => setFilter(prev => prev === 'done' ? 'all' : 'done')}
+            style={{ cursor: 'pointer' }}
+            title="คลิกเพื่อฟิลเตอร์งานที่เสร็จแล้ว"
+          >
             <span className="stat-num">{doneCount}</span>
             <span className="stat-label">เสร็จแล้ว</span>
           </div>
@@ -248,15 +285,48 @@ export default function DetailClient({
 
       {/* ===== Main Content ===== */}
       <div className="detail-main">
-        <h2 className="detail-main-title">รายการงาน</h2>
+        <div className="detail-main-header">
+          <h2 className="detail-main-title" style={{ margin: 0 }}>รายการงาน</h2>
+          <span className="detail-sort-badge">📌 เรียงจากใกล้ถึงกำหนดส่งมากที่สุด</span>
+        </div>
 
-        {works.length === 0 ? (
+        {/* Filter Bar */}
+        <div className="detail-filter-bar">
+          <button
+            className={`detail-filter-btn ${filter === 'all' ? 'active' : ''}`}
+            onClick={() => setFilter('all')}
+          >
+            ทั้งหมด ({works.length})
+          </button>
+          <button
+            className={`detail-filter-btn ${filter === 'pending' ? 'active' : ''}`}
+            onClick={() => setFilter('pending')}
+          >
+            ⏳ งานที่ยังไม่เสร็จ ({pendingCount})
+          </button>
+          <button
+            className={`detail-filter-btn ${filter === 'done' ? 'active' : ''}`}
+            onClick={() => setFilter('done')}
+          >
+            ✓ งานที่เสร็จแล้ว ({doneCount})
+          </button>
+        </div>
+
+        {sortedAndFilteredWorks.length === 0 ? (
           <div className="detail-empty">
-            <p>ยังไม่มีงาน กดปุ่ม "+ เพิ่มงาน" เพื่อเริ่มต้น</p>
+            {works.length === 0 ? (
+              <p>ยังไม่มีงาน กดปุ่ม "+ เพิ่มงาน" เพื่อเริ่มต้น</p>
+            ) : filter === 'pending' ? (
+              <p>ไม่มีงานที่ยังไม่เสร็จ 🎉</p>
+            ) : filter === 'done' ? (
+              <p>ยังไม่มีงานที่เสร็จแล้ว</p>
+            ) : (
+              <p>ไม่มีรายการงาน</p>
+            )}
           </div>
         ) : (
           <div className="task-list">
-            {works.map(work => (
+            {sortedAndFilteredWorks.map(work => (
               <div
                 key={work.work_id}
                 className={`task-card ${work.work_status ? 'status-done' : 'status-pending'}`}
@@ -267,7 +337,9 @@ export default function DetailClient({
                 </div>
 
                 {work.work_detail && (
-                  <p style={{ marginTop: 6 }}><strong>รายละเอียด :</strong> {work.work_detail}</p>
+                  <p className="task-card-detail">
+                    <strong>รายละเอียด :</strong> {work.work_detail}
+                  </p>
                 )}
                 <div className="task-card-dates">
                   {work.work_date_start && (
