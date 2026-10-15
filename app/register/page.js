@@ -17,10 +17,7 @@ export default function RegisterPage() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setForm((prevForm) => ({
-      ...prevForm,
-      [name]: value
-    }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   }
 
   function handleFileChange(e) {
@@ -39,16 +36,13 @@ export default function RegisterPage() {
     }
 
     let profileUrl = '';
-    
+
     if (file) {
       setIsUploading(true);
       const formData = new FormData();
       formData.append('file', file);
       try {
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
         const uploadData = await uploadRes.json();
         if (uploadData.error) {
           alert('Upload failed: ' + uploadData.error);
@@ -64,11 +58,10 @@ export default function RegisterPage() {
       }
     }
 
+    setIsUploading(true);
     fetch('/api/users', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         users_id: form.users_id,
         users_name: form.users_name,
@@ -76,19 +69,11 @@ export default function RegisterPage() {
         users_profile_url: profileUrl
       })
     })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('User registered:', data);
-        router.push('/login');
-      })
-      .catch((error) => {
-        console.error('Error registering user:', error);
-      })
-      .finally(() => {
-        setIsUploading(false);
-      });
+      .then((r) => r.json())
+      .then(() => { router.push('/login'); })
+      .catch((err) => { console.error('Error registering user:', err); })
+      .finally(() => { setIsUploading(false); });
   }
-
 
   return (
     <div className="auth-page">
@@ -103,7 +88,7 @@ export default function RegisterPage() {
             name="users_id"
             value={form.users_id}
             onChange={handleChange}
-            autoComplete="users_id"
+            autoComplete="off"
           />
         </div>
 
@@ -115,7 +100,7 @@ export default function RegisterPage() {
             name="users_name"
             value={form.users_name}
             onChange={handleChange}
-            autoComplete="users_name"
+            autoComplete="off"
           />
         </div>
 
@@ -142,6 +127,7 @@ export default function RegisterPage() {
             autoComplete="new-password"
           />
         </div>
+
         <div className="auth-field">
           <label className="auth-label">profile picture :</label>
           <input
@@ -152,18 +138,18 @@ export default function RegisterPage() {
           />
           {preview && (
             <div className="auth-preview-container">
-              <img 
-                src={preview} 
-                alt="Preview" 
-                className="auth-preview-img" 
-              />
+              <img src={preview} alt="Preview" className="auth-preview-img" />
             </div>
           )}
         </div>
 
         <div className="auth-actions">
-          <button className="btn-primary" onClick={handleSave} disabled={isUploading}>
-            {isUploading ? 'Saving...' : 'Save'}
+          <button
+            className={`btn-primary${isUploading ? ' btn-loading' : ''}`}
+            onClick={handleSave}
+            disabled={isUploading}
+          >
+            {isUploading ? <><span className="spinner spinner-sm" /> saving...</> : 'Save'}
           </button>
           <button className="auth-link" onClick={() => router.push('/login')}>
             Back

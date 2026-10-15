@@ -17,6 +17,7 @@ export default function DetailClient({
   const [loading, setLoading] = useState(!initialSubject);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeletingDone, setIsDeletingDone] = useState(false);
+  const [isSavingWork, setIsSavingWork] = useState(false);
 
   // Form state for new work
   const [form, setForm] = useState({
@@ -122,6 +123,7 @@ export default function DetailClient({
       alert('กรุณาใส่หัวข้องาน');
       return;
     }
+    setIsSavingWork(true);
     try {
       const res = await fetch('/api/work', {
         method: 'POST',
@@ -146,6 +148,8 @@ export default function DetailClient({
     } catch (err) {
       console.error(err);
       alert('เกิดข้อผิดพลาด');
+    } finally {
+      setIsSavingWork(false);
     }
   };
 
@@ -211,8 +215,9 @@ export default function DetailClient({
 
   if (loading) {
     return (
-      <div className="detail-layout" style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ fontSize: '1.2rem', color: '#1A7DAF' }}>กำลังโหลดข้อมูล...</p>
+      <div className="loading-section" style={{ minHeight: '100vh' }}>
+        <span className="spinner spinner-lg spinner-dark" />
+        <p style={{ fontSize: '1.1rem', color: '#1A7DAF' }}>กำลังโหลดข้อมูล...</p>
       </div>
     );
   }
@@ -271,7 +276,9 @@ export default function DetailClient({
             onClick={handleDeleteDone}
             disabled={isDeletingDone}
           >
-            {isDeletingDone ? 'กำลังลบ...' : `🗑 ลบงานที่เสร็จแล้ว (${doneCount})`}
+            {isDeletingDone
+              ? <><span className="spinner spinner-sm" /> กำลังลบ...</>
+              : `🗑 ลบงานที่เสร็จแล้ว (${doneCount})`}
           </button>
         )}
 
@@ -419,8 +426,12 @@ export default function DetailClient({
                 <button className="detail-cancel-btn" onClick={() => setIsModalOpen(false)}>
                   ยกเลิก
                 </button>
-                <button className="detail-save-btn" onClick={handleSave}>
-                  บันทึก
+                <button
+                  className={`detail-save-btn${isSavingWork ? ' btn-loading' : ''}`}
+                  onClick={handleSave}
+                  disabled={isSavingWork}
+                >
+                  {isSavingWork ? <><span className="spinner spinner-sm" /> กำลังบันทึก...</> : 'บันทึก'}
                 </button>
               </div>
             </div>

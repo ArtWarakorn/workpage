@@ -29,6 +29,7 @@ export default function DashboardClient({
   const [editModal, setEditModal] = useState(null); // null = ปิด, enroll object = เปิด
   const [editForm, setEditForm] = useState({ day: 'Mon', startTime: '09:00', endTime: '10:30' });
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // ---- Load Data ----
   // ใช้สำหรับ refetch enrollments เดี่ยวๆ หลังจาก add/edit/delete
@@ -114,6 +115,7 @@ export default function DashboardClient({
       return;
     }
 
+    setIsSaving(true);
     try {
       const res = await fetch('/api/enroll', {
         method: 'POST',
@@ -131,6 +133,7 @@ export default function DashboardClient({
       if (res.ok) { loadEnrollments(); handleClear(); }
       else alert('Error saving class');
     } catch(err) { console.error(err); }
+    finally { setIsSaving(false); }
   };
 
   const handleClear = () => {
@@ -315,7 +318,13 @@ export default function DashboardClient({
           </div>
 
           <div className="form-buttons">
-            <button className="btn-save" onClick={handleSave}>Save</button>
+            <button
+              className={`btn-save${isSaving ? ' btn-loading' : ''}`}
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? <><span className="spinner spinner-sm" /> กำลังบันทึก...</> : 'Save'}
+            </button>
             <button className="btn-clear" onClick={handleClear}>Clear</button>
             <button className="btn-clear-timetable" onClick={handleClearTimetable}>
               🗑 Clear ตารางเรียน
@@ -383,10 +392,10 @@ export default function DashboardClient({
                           href={`/dashboard/${encryptedUserId}/detail/${enroll.subject_id}`}
                           style={{
                             display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                            height: '120%', background: '#6d63f1',
+                            height: '120%', background: '#0ea5e9',
                             padding: '4px 28px 4px 8px',
                             color: '#fff', fontSize: '12px',
-                            border: '1px solid #4b46e5',
+                            border: '1px solid #0284c7',
                             textDecoration: 'none', cursor: 'pointer',
                             transition: 'opacity 0.15s ease, transform 0.1s ease',
                           }}
@@ -452,7 +461,9 @@ export default function DashboardClient({
                 ยกเลิก
               </button>
               <button className="edit-modal-save-btn" onClick={handleEditSave} disabled={isSavingEdit}>
-                {isSavingEdit ? 'กำลังบันทึก...' : '💾 บันทึก'}
+                {isSavingEdit
+                  ? <><span className="spinner spinner-sm" /> กำลังบันทึก...</>
+                  : '💾 บันทึก'}
               </button>
             </div>
 
