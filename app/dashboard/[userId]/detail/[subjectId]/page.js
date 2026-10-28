@@ -1,5 +1,5 @@
 import { decryptId } from "@/lib/encryptId";
-import DetailClient from "./DetailClient";
+import DetailClient from "./_components/DetailClient";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";

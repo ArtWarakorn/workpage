@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import NotificationCenter from '@/components/NotificationCenter';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
 
 export default function DetailClient({
   userId,
@@ -55,7 +55,7 @@ export default function DetailClient({
   }, [works, filter]);
 
   // Load subject info
-  const loadSubject = async () => {
+  const loadSubject = useCallback(async () => {
     try {
       const res = await fetch(`/api/subject/${subjectId}`);
       const data = await res.json();
@@ -63,10 +63,10 @@ export default function DetailClient({
     } catch (err) {
       console.error('Error loading subject:', err);
     }
-  };
+  }, [subjectId]);
 
   // Load works for this subject
-  const loadWorks = async () => {
+  const loadWorks = useCallback(async () => {
     try {
       const res = await fetch(`/api/work?subjectId=${subjectId}&userId=${userId}`);
       const data = await res.json();
@@ -74,14 +74,36 @@ export default function DetailClient({
     } catch (err) {
       console.error('Error loading works:', err);
     }
-  };
+  }, [subjectId, userId]);
 
   useEffect(() => {
-    if (subjectId && !initialSubject) {
-      setLoading(true);
-      Promise.all([loadSubject(), loadWorks()]).finally(() => setLoading(false));
-    }
-  }, [subjectId]);
+    if (!subjectId || initialSubject) return;
+
+    let active = true;
+    const fetchInitialData = async () => {
+      try {
+        const [subjectResponse, worksResponse] = await Promise.all([
+          fetch(`/api/subject/${subjectId}`),
+          fetch(`/api/work?subjectId=${subjectId}&userId=${userId}`),
+        ]);
+        const [subjectData, worksData] = await Promise.all([
+          subjectResponse.json(),
+          worksResponse.json(),
+        ]);
+
+        if (!active) return;
+        if (!subjectData.error) setSubject(subjectData);
+        if (Array.isArray(worksData)) setWorks(worksData);
+      } catch (err) {
+        if (active) console.error('Error loading subject data:', err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    fetchInitialData();
+    return () => { active = false; };
+  }, [initialSubject, subjectId, userId]);
 
   // Helper for rendering urgency badge on task card
   const getDeadlineBadge = (endDateStr, isDone) => {
@@ -217,24 +239,38 @@ export default function DetailClient({
     return (
       <div className="loading-section" style={{ minHeight: '100vh' }}>
         <span className="spinner spinner-lg spinner-dark" />
-        <p style={{ fontSize: '1.1rem', color: '#1A7DAF' }}>กำลังโหลดข้อมูล...</p>
+        <p style={{ fontSize: '1.1rem', color: 'var(--blue-bright)' }}>กำลังโหลดข้อมูล...</p>
       </div>
     );
   }
 
   return (
     <div className="detail-layout">
-      {/* Floating Top-Right Notification Center */}
-      <NotificationCenter userId={userId} encryptedUserId={encryptedUserId} onWorkUpdated={loadWorks} />
+      <header className="app-topbar">
+        <button
+          className="app-icon-btn"
+          onClick={() => router.push(`/dashboard/${encryptedUserId}`)}
+          aria-label="กลับไปตารางเรียน"
+        >
+          ←
+        </button>
+        <div className="app-topbar-brand">
+          <span className="app-topbar-mark">WP</span>
+          <div>
+            <p className="app-topbar-title">{subject?.subject_id || subjectId}</p>
+            <p className="app-topbar-sub">{subject?.subject_name || 'รายละเอียดวิชา'}</p>
+          </div>
+        </div>
+        <NotificationCenter userId={userId} encryptedUserId={encryptedUserId} onWorkUpdated={loadWorks} />
+      </header>
 
-      {/* ===== Sidebar ===== */}
       <div className="detail-sidebar">
 
         <div className="detail-sidebar-info">
-          <p><strong>รหัสวิชา :</strong> {subject?.subject_id || subjectId}</p>
-          <p><strong>วิชา :</strong> {subject?.subject_name || '—'}</p>
+          <p><strong>รหัสวิชา</strong> {subject?.subject_id || subjectId}</p>
+          <p><strong>วิชา</strong> {subject?.subject_name || '—'}</p>
           {subject?.subject_detail && (
-            <p style={{ fontSize: '0.95rem', color: '#444', marginTop: 4 }}>
+            <p className="detail-sidebar-desc">
               {subject.subject_detail}
             </p>
           )}
@@ -286,7 +322,7 @@ export default function DetailClient({
           className="detail-back-btn"
           onClick={() => router.push(`/dashboard/${encryptedUserId}`)}
         >
-          ← กลับ
+          ← กลับตารางเรียน
         </button>
       </div>
 
@@ -322,7 +358,7 @@ export default function DetailClient({
         {sortedAndFilteredWorks.length === 0 ? (
           <div className="detail-empty">
             {works.length === 0 ? (
-              <p>ยังไม่มีงาน กดปุ่ม "+ เพิ่มงาน" เพื่อเริ่มต้น</p>
+              <p>ยังไม่มีงาน กดปุ่ม &quot;+ เพิ่มงาน&quot; เพื่อเริ่มต้น</p>
             ) : filter === 'pending' ? (
               <p>ไม่มีงานที่ยังไม่เสร็จ 🎉</p>
             ) : filter === 'done' ? (
@@ -372,6 +408,14 @@ export default function DetailClient({
           </div>
         )}
       </div>
+
+      <button
+        className="fab"
+        onClick={() => setIsModalOpen(true)}
+        aria-label="เพิ่มงาน"
+      >
+        +
+      </button>
 
       {/* ===== Modal: Add Work ===== */}
       {isModalOpen && (

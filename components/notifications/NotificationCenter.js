@@ -1,68 +1,65 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function NotificationCenter({ userId, encryptedUserId, onWorkUpdated, subjects = null }) {
   const router = useRouter();
   const [works, setWorks] = useState([]);
-  const [subjectsMap, setSubjectsMap] = useState({});
+  const [remoteSubjectsMap, setRemoteSubjectsMap] = useState({});
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState('all'); // 'all', 'overdue', 'today', 'soon'
   const [loading, setLoading] = useState(true);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Load subject names dictionary — ใช้ prop ถ้ามี ไม่งั้น fetch เอง
-  const fetchSubjects = async () => {
-    if (subjects !== null) {
-      // ใช้ subjects จาก parent โดยตรง ไม่ fetch ซ้ำ
-      const map = {};
-      subjects.forEach(s => { map[s.subject_id] = s.subject_name; });
-      setSubjectsMap(map);
-      return;
-    }
-    try {
-      const res = await fetch('/api/subject');
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        const map = {};
-        data.forEach(s => { map[s.subject_id] = s.subject_name; });
-        setSubjectsMap(map);
-      }
-    } catch (err) {
-      console.error('Error loading subjects for notification:', err);
-    }
-  };
-
-  // Load user's tasks
-  const fetchUserWorks = async () => {
-    if (!userId) return;
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/work?userId=${userId}`);
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setWorks(data);
-      } else {
-        console.warn('Unexpected data format:', data);
-        setWorks([]);
-      }
-    } catch (err) {
-      console.error('Error loading works for notification:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // re-build subjectsMap ทุกครั้งที่ subjects prop เปลี่ยน
   useEffect(() => {
-    fetchSubjects();
+    if (subjects !== null) return;
+
+    let active = true;
+    fetch('/api/subject')
+      .then(res => res.json())
+      .then(data => {
+        if (!active || !Array.isArray(data)) return;
+        const map = {};
+        data.forEach(subject => { map[subject.subject_id] = subject.subject_name; });
+        setRemoteSubjectsMap(map);
+      })
+      .catch(err => console.error('Error loading subjects for notification:', err));
+
+    return () => { active = false; };
   }, [subjects]);
 
   useEffect(() => {
-    fetchUserWorks();
+    if (!userId) return;
+
+    let active = true;
+    const loadWorks = async () => {
+      try {
+        const res = await fetch(`/api/work?userId=${userId}`);
+        const data = await res.json();
+        if (!active) return;
+        if (Array.isArray(data)) {
+          setWorks(data);
+        } else {
+          console.warn('Unexpected data format:', data);
+          setWorks([]);
+        }
+      } catch (err) {
+        if (active) console.error('Error loading works for notification:', err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadWorks();
+    return () => { active = false; };
   }, [userId]);
+
+  const subjectsMap = useMemo(() => {
+    if (subjects === null) return remoteSubjectsMap;
+    return Object.fromEntries(subjects.map(subject => [subject.subject_id, subject.subject_name]));
+  }, [remoteSubjectsMap, subjects]);
 
   // Handle outside click to close dropdown
   useEffect(() => {

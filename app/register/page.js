@@ -78,10 +78,15 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1 className="auth-title">Register</h1>
+        <div className="auth-brand">
+          <span className="app-topbar-mark">WP</span>
+          <p className="auth-kicker">Work Page</p>
+        </div>
+        <h1 className="auth-title">สมัครสมาชิก</h1>
+        <p className="auth-subtitle">สร้างบัญชีเพื่อจัดตารางเรียนและติดตามงานส่ง</p>
 
         <div className="auth-field">
-          <label className="auth-label">student id :</label>
+          <label className="auth-label">รหัสนักศึกษา</label>
           <input
             className="auth-input"
             type="text"
@@ -89,11 +94,12 @@ export default function RegisterPage() {
             value={form.users_id}
             onChange={handleChange}
             autoComplete="off"
+            placeholder="เช่น 650xxxxx"
           />
         </div>
 
         <div className="auth-field">
-          <label className="auth-label">user name :</label>
+          <label className="auth-label">ชื่อผู้ใช้</label>
           <input
             className="auth-input"
             type="text"
@@ -101,11 +107,12 @@ export default function RegisterPage() {
             value={form.users_name}
             onChange={handleChange}
             autoComplete="off"
+            placeholder="ชื่อที่แสดงในระบบ"
           />
         </div>
 
         <div className="auth-field">
-          <label className="auth-label">password :</label>
+          <label className="auth-label">รหัสผ่าน</label>
           <input
             className="auth-input"
             type="password"
@@ -113,11 +120,12 @@ export default function RegisterPage() {
             value={form.password}
             onChange={handleChange}
             autoComplete="new-password"
+            placeholder="ตั้งรหัสผ่าน"
           />
         </div>
 
         <div className="auth-field">
-          <label className="auth-label">confirm password :</label>
+          <label className="auth-label">ยืนยันรหัสผ่าน</label>
           <input
             className="auth-input"
             type="password"
@@ -125,11 +133,12 @@ export default function RegisterPage() {
             value={form.confirmPassword}
             onChange={handleChange}
             autoComplete="new-password"
+            placeholder="พิมพ์รหัสผ่านอีกครั้ง"
           />
         </div>
 
         <div className="auth-field">
-          <label className="auth-label">profile picture :</label>
+          <label className="auth-label">รูปโปรไฟล์</label>
           <input
             className="auth-input-file"
             type="file"
@@ -149,10 +158,10 @@ export default function RegisterPage() {
             onClick={handleSave}
             disabled={isUploading}
           >
-            {isUploading ? <><span className="spinner spinner-sm" /> saving...</> : 'Save'}
+            {isUploading ? <><span className="spinner spinner-sm" /> กำลังบันทึก...</> : 'สร้างบัญชี'}
           </button>
           <button className="auth-link" onClick={() => router.push('/login')}>
-            Back
+            มีบัญชีแล้ว? เข้าสู่ระบบ
           </button>
         </div>
       </div>

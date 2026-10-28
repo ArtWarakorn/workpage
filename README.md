@@ -33,6 +33,21 @@ Workpage starts with your **class schedule**, not a blank task list. Every task 
 
 Fully deployed on a free-tier stack — no paid infrastructure required to run or extend.
 
+## 📁 Project Structure
+
+```text
+app/                         Next.js routes, layouts, and global styles
+app/api/                     API route handlers
+app/dashboard/[userId]/      Dashboard route and its private UI components
+app/dashboard/[userId]/detail/[subjectId]/
+                             Subject detail route and its private UI components
+components/notifications/    Shared notification UI
+lib/                         Shared utilities and Supabase client
+```
+
+Route-specific components live in `_components/` folders so they stay close to
+their pages without becoming routes. Shared UI belongs under `components/`.
+
 ## 🖼️ Screenshots
 
 > _Add 2–3 screenshots or a short GIF here showing: (1) the schedule view, (2) clicking into a class to add a task, (3) the subject-grouped task list._
@@ -75,4 +90,3 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ## 👤 Author
 
 Built by **[Warakorn junsongnean]** — student & developer, currently focused on full-stack web development.
-

@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import NotificationCenter from "@/components/NotificationCenter";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 export default function DashboardClient({
   userId,
@@ -30,6 +30,8 @@ export default function DashboardClient({
   const [editForm, setEditForm] = useState({ day: 'Mon', startTime: '09:00', endTime: '10:30' });
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
 
   // ---- Load Data ----
   // ใช้สำหรับ refetch enrollments เดี่ยวๆ หลังจาก add/edit/delete
@@ -59,7 +61,7 @@ export default function DashboardClient({
         })
         .catch(err => console.error('Initial load error:', err));
     }
-  }, [userId]);
+  }, [userId, initialUser, initialSubjects.length]);
 
   // ---- Add Form Handlers ----
   const handleFormChange = (e) => {
@@ -130,7 +132,7 @@ export default function DashboardClient({
           end_time: formatTime(form.endTime)
         })
       });
-      if (res.ok) { loadEnrollments(); handleClear(); }
+      if (res.ok) { loadEnrollments(); handleClear(); setFormOpen(false); }
       else alert('Error saving class');
     } catch(err) { console.error(err); }
     finally { setIsSaving(false); }
@@ -237,48 +239,70 @@ export default function DashboardClient({
   const TIME_SLOTS  = getDynamicTimeSlots();
   const DAYS        = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const DAY_OPTIONS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const DAY_TH = { Mon: 'จันทร์', Tue: 'อังคาร', Wed: 'พุธ', Thu: 'พฤหัส', Fri: 'ศุกร์', Sat: 'เสาร์', Sun: 'อาทิตย์' };
   const SLOT_WIDTH  = 110;
   const SLOT_GAP    = 8;
 
+  const closeMenu = () => setMenuOpen(false);
+
   return (
-    <div className="dashboard-layout">
+    <div className={`dashboard-layout${menuOpen ? ' menu-open' : ''}`}>
+      <header className="app-topbar">
+        <button
+          className="menu-toggle"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label={menuOpen ? 'ปิดเมนู' : 'เปิดเมนู'}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+        <div className="app-topbar-brand">
+          <span className="app-topbar-mark">WP</span>
+          <div>
+            <p className="app-topbar-title">ตารางเรียน</p>
+            <p className="app-topbar-sub">{user?.users_name || 'กำลังโหลด...'}</p>
+          </div>
+        </div>
+        <NotificationCenter userId={userId} encryptedUserId={encryptedUserId} subjects={availableSubjects} />
+      </header>
 
-      {/* Floating Top-Right Notification Center */}
-      <NotificationCenter userId={userId} encryptedUserId={encryptedUserId} subjects={availableSubjects} />
+      {menuOpen && <button className="sidebar-backdrop" onClick={closeMenu} aria-label="ปิดเมนู" />}
 
-      {/* ===== Sidebar ===== */}
-      <aside className="sidebar">
-        <div className="sidebar-avatar" style={{ overflow: 'hidden' }}>
+      <aside className={`sidebar${menuOpen ? ' open' : ''}`}>
+        <div className="sidebar-avatar">
           {user?.users_profile_url && (
-            <img src={user.users_profile_url} alt="Profile"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={user.users_profile_url} alt="Profile" />
           )}
         </div>
-        <p className="sidebar-username">User Name : {user?.users_name || '...'}</p>
+        <p className="sidebar-username">{user?.users_name || '...'}</p>
 
         <button className="sidebar-logout-btn" onClick={async () => {
             await fetch('/api/logout', { method: 'POST' });
             router.push('/login');
           }}>
-          Logout
+          ออกจากระบบ
         </button>
 
         <nav className="sidebar-nav">
-          <a className="sidebar-nav-btn active" href="">จัดตรางเรียน</a>
-          <a className="sidebar-nav-btn" href="https://github.com">Open GitHub</a>
-          <a className="sidebar-nav-btn" href="https://drive.google.com/drive/home">Open Google Drive</a>
-          <a className="sidebar-nav-btn" href="https://www.canva.com/">Open Canva</a>
+          <a className="sidebar-nav-btn active" href="" onClick={closeMenu}>ตารางเรียน</a>
+          <a className="sidebar-nav-btn" href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a className="sidebar-nav-btn" href="https://drive.google.com/drive/home" target="_blank" rel="noopener noreferrer">Google Drive</a>
+          <a className="sidebar-nav-btn" href="https://www.canva.com/" target="_blank" rel="noopener noreferrer">Canva</a>
         </nav>
       </aside>
 
-      {/* ===== Main ===== */}
       <main className="main-content">
+        <div className="mobile-toolbar">
+          <button className="form-toggle-btn" onClick={() => setFormOpen((open) => !open)}>
+            {formOpen ? 'ซ่อนฟอร์มเพิ่มวิชา' : '+ เพิ่มวิชาในตาราง'}
+          </button>
+        </div>
 
-        {/* --- Add Form Panel --- */}
-        <section className="task-form-panel">
+        <section className={`task-form-panel${formOpen ? ' is-open' : ''}`}>
           <div className="form-col-left-span">
             <div className="form-group">
-              <label className="form-label">รหัสวิชา :</label>
+              <label className="form-label">รหัสวิชา</label>
               <select className="form-select" name="subject_id" value={form.subject_id} onChange={handleFormChange}>
                 <option value="">-- เลือกรหัสวิชา --</option>
                 {availableSubjects.map(sub => (
@@ -289,30 +313,28 @@ export default function DashboardClient({
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">วิชา :</label>
-              <input className="form-input" name="subject_name" value={form.subject_name} readOnly
-                style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} />
+              <label className="form-label">วิชา</label>
+              <input className="form-input" name="subject_name" value={form.subject_name} readOnly placeholder="เลือกวิชาแล้วจะขึ้นอัตโนมัติ" />
             </div>
             <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">รายละเอียด :</label>
-              <textarea className="form-textarea" name="subject_detail" rows={3} value={form.subject_detail} readOnly
-                style={{ backgroundColor: '#f1f5f9', color: '#64748b' }} />
+              <label className="form-label">รายละเอียด</label>
+              <textarea className="form-textarea" name="subject_detail" rows={3} value={form.subject_detail} readOnly placeholder="รายละเอียดวิชา" />
             </div>
           </div>
 
           <div className="form-col-center-panel">
             <div className="form-group">
-              <label className="form-label">วันที่ :</label>
+              <label className="form-label">วันที่</label>
               <select className="form-select" name="day" value={form.day} onChange={handleFormChange}>
-                {DAY_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                {DAY_OPTIONS.map(d => <option key={d} value={d}>{DAY_TH[d]} ({d})</option>)}
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">เลือกเวลาเริ่ม :</label>
+              <label className="form-label">เวลาเริ่ม</label>
               <input type="time" className="form-input" name="startTime" value={form.startTime} onChange={handleFormChange} />
             </div>
             <div className="form-group">
-              <label className="form-label">เลือกเวลาออก :</label>
+              <label className="form-label">เวลาออก</label>
               <input type="time" className="form-input" name="endTime" value={form.endTime} onChange={handleFormChange} />
             </div>
           </div>
@@ -323,16 +345,46 @@ export default function DashboardClient({
               onClick={handleSave}
               disabled={isSaving}
             >
-              {isSaving ? <><span className="spinner spinner-sm" /> กำลังบันทึก...</> : 'Save'}
+              {isSaving ? <><span className="spinner spinner-sm" /> กำลังบันทึก...</> : 'บันทึกวิชา'}
             </button>
-            <button className="btn-clear" onClick={handleClear}>Clear</button>
+            <button className="btn-clear" onClick={handleClear}>ล้างฟอร์ม</button>
             <button className="btn-clear-timetable" onClick={handleClearTimetable}>
-              🗑 Clear ตารางเรียน
+              ลบตารางทั้งหมด
             </button>
           </div>
         </section>
 
-        {/* --- Calendar Grid --- */}
+        <section className="schedule-mobile">
+          {enrollments.length === 0 ? (
+            <div className="detail-empty">ยังไม่มีวิชาในตาราง กด “เพิ่มวิชาในตาราง” เพื่อเริ่มต้น</div>
+          ) : DAYS.map((day) => {
+            const dayItems = enrollments.filter((e) => e.enroll_day === day);
+            if (dayItems.length === 0) return null;
+            return (
+              <div key={day} className="schedule-day-group">
+                <h3 className="schedule-day-title">{DAY_TH[day]} <span>{day}</span></h3>
+                {dayItems.map((enroll) => (
+                  <article key={`${day}-${enroll.subject_id}`} className="schedule-card">
+                    <div>
+                      <p className="schedule-card-code">{enroll.subject_id}</p>
+                      <p className="schedule-card-name">{enroll.subject?.subject_name || '—'}</p>
+                      <p className="schedule-card-time">
+                        {enroll.start_time?.substring(0, 5)} – {enroll.end_time?.substring(0, 5)}
+                      </p>
+                    </div>
+                    <div className="schedule-card-actions">
+                      <button className="schedule-edit-btn" onClick={(e) => handleEditOpen(e, enroll)}>แก้ไข</button>
+                      <Link className="schedule-open-btn" href={`/dashboard/${encryptedUserId}/detail/${enroll.subject_id}`}>
+                        ดูงาน
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            );
+          })}
+        </section>
+
         <section className="calendar-area">
           <div className="time-slots-row">
             {TIME_SLOTS.map(slot => (
@@ -347,12 +399,10 @@ export default function DashboardClient({
                 <div className="day-cells"
                   style={{ width: TIME_SLOTS.length * (SLOT_WIDTH + SLOT_GAP) - SLOT_GAP, display: 'flex', gap: SLOT_GAP, position: 'relative' }}
                 >
-                  {/* Background slots */}
                   {TIME_SLOTS.map(slot => (
                     <div key={slot} style={{ width: SLOT_WIDTH, background: 'transparent', borderRadius: 6 }} />
                   ))}
 
-                  {/* Enrollment blocks */}
                   {enrollments.filter(e => e.enroll_day === day).map((enroll, idx) => {
                     if (!enroll.start_time || !enroll.end_time) return null;
 
@@ -360,55 +410,37 @@ export default function DashboardClient({
                     const [eh, em] = enroll.end_time.split(':').map(Number);
                     const startMins = sh * 60 + sm;
                     const endMins   = eh * 60 + em;
+                    const durationSlots = Math.max((endMins - startMins) / 30, 1);
 
                     const [gsh, gsm] = TIME_SLOTS[0].split('-')[0].split('.').map(Number);
                     const gridStartMins = gsh * 60 + gsm;
 
                     const startSlotOffset = (startMins - gridStartMins) / 30;
-                    const durationSlots   = (endMins - startMins) / 30;
                     const leftPx  = startSlotOffset * (SLOT_WIDTH + SLOT_GAP);
                     const widthPx = durationSlots * SLOT_WIDTH + (durationSlots - 1) * SLOT_GAP;
 
                     return (
                       <div
                         key={idx}
-                        style={{
-                          position: 'absolute', left: leftPx, top: 0, bottom: 0,
-                          width: widthPx, borderRadius: 6, overflow: 'hidden',
-                          zIndex: 10, boxSizing: 'border-box',
-                        }}
+                        className="enroll-block-wrap"
+                        style={{ left: leftPx, width: widthPx }}
                       >
-                        {/* ปุ่ม ✏️ แก้ไข มุมขวาบน */}
                         <button
                           className="enroll-edit-btn"
                           title="แก้ไขวัน/เวลา"
                           onClick={(e) => handleEditOpen(e, enroll)}
                         >
-                          ✏️
+                          แก้ไข
                         </button>
-
-                        {/* คลิกเพื่อไปหน้า detail */}
                         <Link
                           href={`/dashboard/${encryptedUserId}/detail/${enroll.subject_id}`}
-                          style={{
-                            display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                            height: '120%', background: '#0ea5e9',
-                            padding: '4px 28px 4px 8px',
-                            color: '#fff', fontSize: '12px',
-                            border: '1px solid #0284c7',
-                            textDecoration: 'none', cursor: 'pointer',
-                            transition: 'opacity 0.15s ease, transform 0.1s ease',
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.opacity = '0.82'; e.currentTarget.style.transform = 'scale(1.02)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.opacity = '1';    e.currentTarget.style.transform = 'scale(1)'; }}
+                          className="enroll-block"
                         >
-                          <div style={{ fontWeight: 'bold' }}>{enroll.subject_id}</div>
-                          <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {enroll.subject?.subject_name}
-                          </div>
-                          <div style={{ fontSize: '10px', marginTop: '2px', color: '#e0e7ff' }}>
+                          <span className="enroll-block-id">{enroll.subject_id}</span>
+                          <span className="enroll-block-name">{enroll.subject?.subject_name}</span>
+                          <span className="enroll-block-time">
                             {enroll.start_time.substring(0, 5)} - {enroll.end_time.substring(0, 5)}
-                          </div>
+                          </span>
                         </Link>
                       </div>
                     );

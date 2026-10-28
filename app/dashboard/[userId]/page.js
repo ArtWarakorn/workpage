@@ -1,5 +1,5 @@
 import { decryptId } from "@/lib/encryptId";
-import DashboardClient from "./DashboardClient";
+import DashboardClient from "./_components/DashboardClient";
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";

@@ -40,25 +40,17 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1 className="auth-title">sign in</h1>
+        <div className="auth-brand">
+          <span className="app-topbar-mark">WP</span>
+          <p className="auth-kicker">Work Page</p>
+        </div>
+        <h1 className="auth-title">เข้าสู่ระบบ</h1>
+        <p className="auth-subtitle">จัดการตารางเรียนและงานส่งในที่เดียว</p>
 
-        {error && (
-          <p style={{
-            color: '#fca5a5',
-            textAlign: 'center',
-            marginBottom: '16px',
-            fontSize: '0.88rem',
-            background: 'rgba(239,68,68,0.1)',
-            border: '1px solid rgba(239,68,68,0.3)',
-            borderRadius: '8px',
-            padding: '10px 16px',
-          }}>
-            {error}
-          </p>
-        )}
+        {error && <p className="auth-error">{error}</p>}
 
         <div className="auth-field">
-          <label className="auth-label">user name :</label>
+          <label className="auth-label">ชื่อผู้ใช้</label>
           <input
             className="auth-input"
             type="text"
@@ -66,11 +58,12 @@ export default function LoginPage() {
             value={form.username}
             onChange={handleChange}
             autoComplete="username"
+            placeholder="กรอกชื่อผู้ใช้"
           />
         </div>
 
         <div className="auth-field">
-          <label className="auth-label">password :</label>
+          <label className="auth-label">รหัสผ่าน</label>
           <input
             className="auth-input"
             type="password"
@@ -78,6 +71,7 @@ export default function LoginPage() {
             value={form.password}
             onChange={handleChange}
             autoComplete="current-password"
+            placeholder="กรอกรหัสผ่าน"
           />
         </div>
 
@@ -87,10 +81,10 @@ export default function LoginPage() {
             onClick={handleSignIn}
             disabled={isLoading}
           >
-            {isLoading ? <><span className="spinner spinner-sm" /> signing in...</> : 'sign in'}
+            {isLoading ? <><span className="spinner spinner-sm" /> กำลังเข้าสู่ระบบ...</> : 'เข้าสู่ระบบ'}
           </button>
           <Link href="/register" className="auth-link">
-            create account
+            ยังไม่มีบัญชี? สมัครสมาชิก
           </Link>
         </div>
       </div>
